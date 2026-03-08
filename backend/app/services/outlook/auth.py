@@ -6,11 +6,18 @@ on behalf of a signed-in user.
 
 Token cache is kept **in-memory** (per-user SerializableTokenCache).  For
 production, swap to a persistent store (Redis, DB, encrypted file, etc.).
+
+Pending auth flows are stored in memory and on disk so the callback still
+works after a uvicorn reload (e.g. --reload).
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
+import time
+from pathlib import Path
 from typing import Optional
 
 import msal
@@ -24,6 +31,41 @@ _token_caches: dict[str, str] = {}
 
 # Temporary store for pending auth flows (state -> flow dict)
 _pending_flows: dict[str, dict] = {}
+
+# Disk fallback for pending flows (survives process restart / --reload)
+_AUTH_FLOWS_DIR = Path(__file__).resolve().parent.parent.parent / ".auth_flows"
+_FLOW_TTL_SECONDS = 600  # 10 minutes
+
+
+def _flow_file_path(state: str) -> Path:
+    safe_name = hashlib.sha256(state.encode()).hexdigest()[:32]
+    return _AUTH_FLOWS_DIR / f"{safe_name}.json"
+
+
+def _save_flow_to_disk(state: str, flow: dict) -> None:
+    _AUTH_FLOWS_DIR.mkdir(parents=True, exist_ok=True)
+    path = _flow_file_path(state)
+    try:
+        path.write_text(json.dumps({"state": state, "flow": flow, "ts": time.time()}), encoding="utf-8")
+    except Exception as e:
+        log.warning("Could not persist auth flow to disk: %s", e)
+
+
+def _load_flow_from_disk(state: str) -> dict | None:
+    path = _flow_file_path(state)
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if time.time() - data.get("ts", 0) > _FLOW_TTL_SECONDS:
+            path.unlink(missing_ok=True)
+            return None
+        path.unlink(missing_ok=True)
+        return data.get("flow")
+    except Exception as e:
+        log.warning("Could not load auth flow from disk: %s", e)
+        path.unlink(missing_ok=True)
+        return None
 
 
 def _build_msal_app(cache: Optional[msal.SerializableTokenCache] = None) -> msal.ConfidentialClientApplication:
@@ -55,6 +97,7 @@ def initiate_auth_flow(state: Optional[str] = None) -> tuple[str, str]:
 
     effective_state = flow.get("state", state or "")
     _pending_flows[effective_state] = flow
+    _save_flow_to_disk(effective_state, flow)
     return flow["auth_uri"], effective_state
 
 
@@ -65,6 +108,8 @@ def complete_auth_flow(query_params: dict) -> dict:
     """
     state = query_params.get("state", "")
     flow = _pending_flows.pop(state, None)
+    if flow is None:
+        flow = _load_flow_from_disk(state)
     if flow is None:
         raise ValueError("Auth flow not found or expired. Please start login again.")
 

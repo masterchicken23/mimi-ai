@@ -2,6 +2,8 @@
 
 FastAPI backend that provides email management via the Microsoft Graph API (Outlook) with delegated permissions.
 
+**Para um guia passo a passo de como fazer a API funcionar (Python, Azure, .env, login e testes), veja [SETUP.md](./SETUP.md).**
+
 ## Architecture
 
 ```

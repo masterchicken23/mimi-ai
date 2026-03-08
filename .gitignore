@@ -36,3 +36,7 @@ venv/
 *.egg-info/
 .eggs/
 *.egg
+
+# Backend temp auth state (OAuth flow persistence)
+backend/.auth_flows/
+.auth_flows/

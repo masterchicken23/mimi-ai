@@ -1,4 +1,29 @@
+import os
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_ENV_FILE = _BACKEND_DIR / ".env"
+
+# Manually parse .env to handle Windows encoding edge cases (BOM, UTF-16, etc.)
+if _ENV_FILE.is_file():
+    for encoding in ("utf-8-sig", "utf-8", "utf-16", "latin-1"):
+        try:
+            raw = _ENV_FILE.read_text(encoding=encoding)
+            for line in raw.splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    key, _, value = line.partition("=")
+                    key = key.strip()
+                    value = value.strip()
+                    if key and key not in os.environ:
+                        os.environ[key] = value
+            break
+        except (UnicodeDecodeError, UnicodeError):
+            continue
 
 
 class Settings(BaseSettings):
@@ -29,7 +54,16 @@ class Settings(BaseSettings):
         "Mail.Send",
     ]
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"extra": "ignore"}
 
 
 settings = Settings()
+
+if not settings.ms_client_id or not settings.ms_client_secret:
+    raise RuntimeError(
+        f"MS_CLIENT_ID and MS_CLIENT_SECRET must be set.\n"
+        f"  .env path: {_ENV_FILE} (exists={_ENV_FILE.is_file()})\n"
+        f"  MS_CLIENT_ID in os.environ: {bool(os.environ.get('MS_CLIENT_ID'))}\n"
+        f"  MS_CLIENT_SECRET in os.environ: {bool(os.environ.get('MS_CLIENT_SECRET'))}\n"
+        f"  Loaded ms_client_id: '{settings.ms_client_id[:8]}...' (len={len(settings.ms_client_id)})"
+    )
