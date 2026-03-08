@@ -8,17 +8,17 @@
   "household": "Lives alone in a rented apartment in South Austin; sister Carmen Reyes nearby, adult son Luis in Houston",
   "income_approx": "$24,000/year (part-time wages + partial Social Security disability)",
   "goals": [
-    "Stay independent in her apartment as long as safely possible, with practical support from family",
+    "Never miss a bill payment again — late fees have cost her over $80 in the past year because she couldn't operate the banking app",
+    "Check account balance and pay bills using voice commands instead of depending on Carmen every Saturday",
     "Pay down $32K in combined credit card and medical debt before retirement",
-    "Build retirement savings past the current $47K — explore catch-up contributions and delay Social Security",
-    "Keep Parkinson's progression slow through exercise, medication, and therapy",
-    "Maintain daily routines using timers, checklists, and adaptive tools so tasks feel manageable"
+    "Stay independent in her apartment as long as safely possible, with practical support from family",
+    "Keep Parkinson's progression slow through exercise, medication, and therapy"
   ],
   "pain_points": [
-    "Right-hand resting tremor makes typing, writing, and touchscreens extremely difficult",
-    "Financial anxiety — medical costs keep rising while income is fixed and retirement savings are far behind",
-    "Medication side effects (dizziness, nausea, restless legs) that vary day to day",
-    "Guilt about relying on sister Carmen for errands, bills, and paperwork",
+    "Right-hand resting tremor makes typing, writing, and touchscreens extremely difficult — cannot operate banking apps or enter passwords",
+    "Has missed bill payments twice in the past year because the phone screen was too hard to navigate with tremor",
+    "Financial anxiety — medical costs keep rising while income is fixed and late fees make things worse",
+    "Depends entirely on sister Carmen to pay bills, check balances, and sort mail every Saturday",
     "Fear of disease progression — losing the ability to drive, work, or live alone"
   ],
   "personality": {
@@ -32,9 +32,9 @@
       "adapts well when given the right tools and routines"
     ],
     "growth_areas": [
-      "accepting help without shame",
-      "building confidence with voice-to-text and phone reminders",
-      "advocating for herself at medical appointments instead of going blank",
+      "paying her own bills by voice instead of waiting for Carmen every Saturday",
+      "building confidence with voice-to-text and phone reminders for due dates",
+      "checking her own balance and spending without needing help",
       "not catastrophizing about the future on bad tremor days"
     ]
   },
