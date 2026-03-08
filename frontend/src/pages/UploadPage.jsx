@@ -1,5 +1,8 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { usePlaidLink } from 'react-plaid-link'
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
 
 const CATEGORY_LABELS = {
   conversations: 'Conversation History',
@@ -37,12 +40,96 @@ function guessCategory(filename, data) {
   return 'other'
 }
 
+function PlaidLinkButton({ onSuccess, onConnecting }) {
+  const [linkToken, setLinkToken] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  const fetchLinkToken = async () => {
+    setLoading(true)
+    onConnecting?.(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/plaid/create-link-token`, { method: 'POST' })
+      const data = await res.json()
+      setLinkToken(data.link_token)
+    } catch (err) {
+      console.error('Failed to get link token:', err)
+      onConnecting?.(false)
+    }
+    setLoading(false)
+  }
+
+  const { open, ready } = usePlaidLink({
+    token: linkToken,
+    onSuccess: async (publicToken) => {
+      onConnecting?.(true)
+      try {
+        const exchangeRes = await fetch(`${API_BASE}/api/plaid/exchange-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ public_token: publicToken }),
+        })
+        const { item_id } = await exchangeRes.json()
+
+        const dataRes = await fetch(`${API_BASE}/api/plaid/data`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id }),
+        })
+        const bankData = await dataRes.json()
+        onSuccess(bankData)
+      } catch (err) {
+        console.error('Failed to fetch bank data:', err)
+      }
+      onConnecting?.(false)
+    },
+    onExit: () => onConnecting?.(false),
+  })
+
+  useEffect(() => {
+    if (linkToken && ready) open()
+  }, [linkToken, ready, open])
+
+  return (
+    <button
+      onClick={fetchLinkToken}
+      disabled={loading}
+      className="
+        w-full flex items-center gap-4 bg-emerald-50 rounded-xl p-4 border border-emerald-100
+        hover:bg-emerald-100 transition-all cursor-pointer text-left
+        disabled:opacity-60 disabled:cursor-wait
+      "
+    >
+      <div className="flex-shrink-0">
+        <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+            <line x1="1" y1="10" x2="23" y2="10" />
+          </svg>
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-emerald-900">
+          {loading ? 'Connecting…' : 'Connect Bank Account'}
+        </p>
+        <p className="text-xs text-emerald-600 mt-0.5">
+          Securely link your bank to import balance and transactions via Plaid
+        </p>
+      </div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </button>
+  )
+}
+
 export default function UploadPage() {
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
   const [files, setFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
   const [parseError, setParseError] = useState(null)
+  const [bankData, setBankData] = useState(null)
+  const [bankConnecting, setBankConnecting] = useState(false)
 
   const processFiles = useCallback(async (fileList) => {
     setParseError(null)
@@ -91,14 +178,29 @@ export default function UploadPage() {
     setParseError(null)
   }
 
+  const handleBankSuccess = (data) => {
+    setBankData(data)
+  }
+
   const handleNext = () => {
     const userData = {}
     for (const f of files) {
       if (!userData[f.category]) userData[f.category] = []
       userData[f.category].push({ filename: f.name, data: f.data })
     }
+
+    if (bankData) {
+      if (!userData.banking) userData.banking = []
+      userData.banking.push({
+        filename: 'plaid-bank-connection',
+        data: bankData,
+      })
+    }
+
     navigate('/dashboard', { state: { userData } })
   }
+
+  const totalSources = files.length + (bankData ? 1 : 0)
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
@@ -118,12 +220,12 @@ export default function UploadPage() {
           </button>
         </div>
 
-        <p className="px-8 text-sm text-gray-400 pb-2">
-          Drop your JSON files — conversation history, search data, bank transactions, calendar, and more.
+        <p className="px-8 text-sm text-gray-400 pb-4">
+          Import your data so Mimi can give you personalized advice — drop JSON files or connect your bank account.
         </p>
 
         {/* Drop zone */}
-        <div className="px-8 pt-2 pb-2">
+        <div className="px-8 pb-2">
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -132,7 +234,7 @@ export default function UploadPage() {
             className={`
               relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed
               cursor-pointer transition-all duration-200
-              ${files.length > 0 ? 'py-8' : 'py-14'}
+              ${files.length > 0 ? 'py-6' : 'py-12'}
               ${isDragging
                 ? 'border-blue-400 bg-blue-50'
                 : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100'
@@ -202,21 +304,57 @@ export default function UploadPage() {
             <p className="text-red-500 text-xs mt-2 px-1">{parseError}</p>
           )}
 
-          <div className="flex justify-between text-xs text-gray-400 mt-3 px-1">
+          <div className="flex justify-between text-xs text-gray-400 mt-2 px-1">
             <span>Supported format: JSON</span>
             <span>{files.length} file{files.length !== 1 ? 's' : ''} loaded</span>
           </div>
         </div>
 
+        {/* Bank connection */}
+        <div className="px-8 py-4">
+          {bankData ? (
+            <div className="flex items-center gap-4 bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-emerald-900">Bank Connected</p>
+                <p className="text-xs text-emerald-600 mt-0.5">
+                  {bankData.accounts?.length || 0} account{(bankData.accounts?.length || 0) !== 1 ? 's' : ''} · {bankData.transactions?.length || 0} transaction{(bankData.transactions?.length || 0) !== 1 ? 's' : ''} imported
+                </p>
+              </div>
+              <button
+                onClick={() => setBankData(null)}
+                className="text-emerald-400 hover:text-red-500 transition-colors flex-shrink-0"
+                aria-label="Remove bank connection"
+              >
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="14" y1="4" x2="4" y2="14" />
+                  <line x1="4" y1="4" x2="14" y2="14" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <PlaidLinkButton
+              onSuccess={handleBankSuccess}
+              onConnecting={setBankConnecting}
+            />
+          )}
+        </div>
+
         {/* Category legend */}
-        {files.length > 0 && (
-          <div className="px-8 py-3">
+        {(files.length > 0 || bankData) && (
+          <div className="px-8 py-2">
             <div className="flex flex-wrap gap-2">
               {Object.entries(
                 files.reduce((acc, f) => {
                   acc[f.category] = (acc[f.category] || 0) + 1
                   return acc
-                }, {})
+                }, bankData ? { banking: 1 } : {})
               ).map(([cat, count]) => (
                 <span
                   key={cat}
@@ -256,13 +394,11 @@ export default function UploadPage() {
 
         {/* Footer actions */}
         <div className="flex items-center justify-between px-8 py-6 border-t border-gray-100">
-          <button className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="8" cy="8" r="7" />
-              <text x="8" y="11" textAnchor="middle" fill="currentColor" fontSize="10" stroke="none">?</text>
-            </svg>
-            Help Center
-          </button>
+          <p className="text-xs text-gray-300">
+            {totalSources > 0
+              ? `${totalSources} data source${totalSources !== 1 ? 's' : ''} ready`
+              : 'No data loaded yet'}
+          </p>
           <div className="flex gap-3">
             <button
               onClick={() => navigate('/dashboard')}
@@ -272,7 +408,8 @@ export default function UploadPage() {
             </button>
             <button
               onClick={handleNext}
-              className="px-6 py-2.5 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors shadow-sm"
+              disabled={bankConnecting}
+              className="px-6 py-2.5 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50"
             >
               Next
             </button>

@@ -12,6 +12,13 @@ const STATUS = {
   ENDING: 'ending',
 }
 
+function getTimeOfDay() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'evening'
+}
+
 function buildContextString(userData) {
   if (!userData || Object.keys(userData).length === 0) return ''
 
@@ -67,6 +74,14 @@ export default function DashboardPage() {
           ...prev,
           { role: msg.role, text: msg.transcript },
         ])
+
+        if (msg.role === 'user') {
+          const spoken = msg.transcript.toLowerCase().trim()
+          if (spoken.includes('end call') || spoken.includes('end this call')) {
+            setStatus(STATUS.ENDING)
+            vapi.stop()
+          }
+        }
       }
     })
     vapi.on('error', (err) => {
@@ -87,12 +102,12 @@ export default function DashboardPage() {
     setStatus(STATUS.CONNECTING)
     setTranscript([])
 
-    const overrides = {}
-    if (userContext.current) {
-      overrides.variableValues = {
+    const overrides = {
+      variableValues: {
         userName,
-        userContext: userContext.current,
-      }
+        timeOfDay: getTimeOfDay(),
+        userContext: userContext.current || '',
+      },
     }
 
     await vapiRef.current.start(ASSISTANT_ID, overrides)
@@ -174,7 +189,7 @@ export default function DashboardPage() {
                 </h2>
 
                 <p className="text-gray-400 text-sm mb-8 text-center max-w-xs">
-                  Mimi is here to help. Press the button below or just say <span className="italic text-gray-500">"Hello Mimi"</span> to start.
+                  Mimi is here to help. Press the button below to start.
                 </p>
 
                 <button
@@ -189,7 +204,7 @@ export default function DashboardPage() {
                 </button>
 
                 <p className="text-gray-300 text-xs mt-4">
-                  or say <span className="italic">"Hello Mimi"</span> to start
+                  say <span className="italic">"end call"</span> to stop your conversation
                 </p>
               </div>
             )}
