@@ -30,6 +30,7 @@ const OUTLOOK_SCOPES = [
   'User.Read',
   'Mail.ReadWrite',
   'Mail.Send',
+  'Calendars.Read',
 ]
 const OUTLOOK_AUTH_DIR = path.join(__dirname, '.auth_flows')
 const OUTLOOK_TOKEN_DIR = path.join(__dirname, '.token_cache')
@@ -200,6 +201,32 @@ function mapAttachment(raw) {
     name: raw.name || '',
     contentType: raw.contentType || 'application/octet-stream',
     size: raw.size || 0,
+  }
+}
+
+function mapCalendarEvent(raw) {
+  if (!raw) return null
+
+  return {
+    id: raw.id,
+    provider: 'outlook',
+    subject: raw.subject || null,
+    bodyPreview: raw.bodyPreview || null,
+    start: raw.start || null,
+    end: raw.end || null,
+    isAllDay: raw.isAllDay ?? false,
+    isCancelled: raw.isCancelled ?? false,
+    showAs: raw.showAs || null,
+    type: raw.type || null,
+    importance: raw.importance || 'normal',
+    sensitivity: raw.sensitivity || 'normal',
+    location: raw.location || null,
+    organizer: raw.organizer || null,
+    attendees: raw.attendees || [],
+    webLink: raw.webLink || null,
+    onlineMeetingUrl: raw.onlineMeetingUrl || null,
+    createdDateTime: raw.createdDateTime || null,
+    lastModifiedDateTime: raw.lastModifiedDateTime || null,
   }
 }
 
@@ -823,6 +850,34 @@ app.post('/api/email/messages/:messageId/forward', requireOutlookSession, async 
     res.status(202).json({ status: 'forwarded' })
   } catch (err) {
     console.error('forward email error:', err.message)
+    res.status(err.statusCode || 500).json({ error: err.message })
+  }
+})
+
+// ---------------------------------------------------------------------------
+// Outlook calendar routes
+// ---------------------------------------------------------------------------
+
+app.get('/api/calendar/events', requireOutlookSession, async (req, res) => {
+  try {
+    const accessToken = await getOutlookAccessToken(req)
+
+    const top = Number(req.query.top || 10)
+    const orderBy = String(
+      req.query.order_by || req.query.orderBy || 'start/dateTime desc',
+    )
+
+    const query = { $top: top, $orderby: orderBy }
+
+    const data = await graphRequest('GET', '/me/events', accessToken, { query })
+
+    res.json({
+      events: (data.value || []).map(mapCalendarEvent),
+      nextLink: data['@odata.nextLink'] || null,
+      totalCount: data['@odata.count'] || null,
+    })
+  } catch (err) {
+    console.error('list calendar events error:', err.message)
     res.status(err.statusCode || 500).json({ error: err.message })
   }
 })
