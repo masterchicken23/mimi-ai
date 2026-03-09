@@ -1,0 +1,84 @@
+{
+    "recentEmails": [
+      {
+        "from": "program.coordinator@uthealthaustin.org",
+        "fromName": "Residency Program Office",
+        "subject": "Updated Call Schedule for March",
+        "preview": "Hi Maya, attaching the updated overnight call schedule for the remainder of March. Please review the changes to your ICU coverage...",
+        "receivedAt": "2026-03-08T09:12:00Z",
+        "isRead": true
+      },
+      {
+        "from": "mom.patel@example.com",
+        "fromName": "Mom",
+        "subject": "Dinner when you come to Houston?",
+        "preview": "Hi beta, your dad and I were thinking maybe we cook your favorite dal when you visit next weekend. Let us know if you are still coming...",
+        "receivedAt": "2026-03-07T20:03:00Z",
+        "isRead": false
+      },
+      {
+        "from": "no-reply@doximity.com",
+        "fromName": "Doximity Alerts",
+        "subject": "New Clinical Article: Advances in Heart Failure Treatment",
+        "preview": "A new article relevant to internal medicine was published today. Based on your specialty we thought you might find this useful...",
+        "receivedAt": "2026-03-07T15:41:00Z",
+        "isRead": true
+      },
+      {
+        "from": "apartment@riversideleasing.com",
+        "fromName": "Riverside Apartments",
+        "subject": "Rent Payment Confirmation",
+        "preview": "Hello Maya, this is a confirmation that we successfully received your rent payment for March. Thank you for your prompt payment...",
+        "receivedAt": "2026-03-05T13:20:00Z",
+        "isRead": true
+      },
+      {
+        "from": "dr.klein@uthealthaustin.org",
+        "fromName": "Dr. Michael Klein",
+        "subject": "Case Follow-up from Yesterday",
+        "preview": "Maya, good work presenting the case during rounds. I wanted to send you the guideline update we discussed regarding management...",
+        "receivedAt": "2026-03-04T18:55:00Z",
+        "isRead": false
+      },
+      {
+        "from": "notifications@apple.com",
+        "fromName": "Apple",
+        "subject": "Your Apple Watch Weekly Activity Summary",
+        "preview": "Here’s your weekly activity summary. You closed your exercise ring three times this week. Keep up the good work...",
+        "receivedAt": "2026-03-04T08:11:00Z",
+        "isRead": true
+      },
+      {
+        "from": "friend.alex@example.com",
+        "fromName": "Alex Rivera",
+        "subject": "Coffee this weekend?",
+        "preview": "Hey Maya, I know residency has been crazy but if you have a free hour this weekend we should grab coffee near campus...",
+        "receivedAt": "2026-03-03T22:34:00Z",
+        "isRead": false
+      },
+      {
+        "from": "billing@studentloans.gov",
+        "fromName": "Federal Student Aid",
+        "subject": "Student Loan Payment Reminder",
+        "preview": "This is a reminder that your upcoming student loan payment is scheduled for March 15. Please review your repayment plan...",
+        "receivedAt": "2026-03-02T16:02:00Z",
+        "isRead": true
+      },
+      {
+        "from": "yoga@downtownstudio.com",
+        "fromName": "Downtown Yoga Studio",
+        "subject": "Your Class Reservation",
+        "preview": "Hi Maya, your spot for the Saturday evening restorative yoga session has been confirmed. Looking forward to seeing you...",
+        "receivedAt": "2026-03-02T11:18:00Z",
+        "isRead": true
+      },
+      {
+        "from": "newsletter@medscape.com",
+        "fromName": "Medscape Daily Brief",
+        "subject": "Morning Medical News Roundup",
+        "preview": "Top medical headlines today include updates in diabetes management and new residency wellness research...",
+        "receivedAt": "2026-03-01T07:45:00Z",
+        "isRead": false
+      }
+    ]
+  }

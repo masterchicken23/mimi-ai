@@ -1,0 +1,176 @@
+{
+    "override_accounts": [
+      {
+        "type": "depository",
+        "subtype": "checking",
+        "starting_balance": 12450,
+        "identity": {
+          "names": ["Maya Patel"],
+          "emails": [
+            {
+              "primary": true,
+              "type": "primary",
+              "data": "maya.patel@example.com"
+            }
+          ],
+          "addresses": [
+            {
+              "primary": true,
+              "data": {
+                "country": "US",
+                "city": "Austin",
+                "street": "412 West 21st Street",
+                "postal_code": "78705",
+                "region": "TX"
+              }
+            }
+          ]
+        },
+        "transactions": [
+          {
+            "date_transacted": "2026-01-02",
+            "date_posted": "2026-01-02",
+            "amount": -3500,
+            "description": "Payroll Deposit - Austin Data Systems",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-01-03",
+            "date_posted": "2026-01-03",
+            "amount": 1250,
+            "description": "Riverside Apartments Rent",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-01-06",
+            "date_posted": "2026-01-06",
+            "amount": 82.15,
+            "description": "H-E-B Grocery",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-01-10",
+            "date_posted": "2026-01-10",
+            "amount": 12.99,
+            "description": "Spotify Subscription",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-01-15",
+            "date_posted": "2026-01-15",
+            "amount": 38.45,
+            "description": "Uber Ride",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-02-01",
+            "date_posted": "2026-02-01",
+            "amount": -3500,
+            "description": "Payroll Deposit - Austin Data Systems",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-02-02",
+            "date_posted": "2026-02-02",
+            "amount": 1250,
+            "description": "Riverside Apartments Rent",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-02-05",
+            "date_posted": "2026-02-05",
+            "amount": 76.42,
+            "description": "Whole Foods Market",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-02-09",
+            "date_posted": "2026-02-09",
+            "amount": 14.75,
+            "description": "Starbucks",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-02-14",
+            "date_posted": "2026-02-14",
+            "amount": 94.22,
+            "description": "Amazon Marketplace",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-03-01",
+            "date_posted": "2026-03-01",
+            "amount": -3500,
+            "description": "Payroll Deposit - Austin Data Systems",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-03-02",
+            "date_posted": "2026-03-02",
+            "amount": 1250,
+            "description": "Riverside Apartments Rent",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-03-04",
+            "date_posted": "2026-03-04",
+            "amount": 64.18,
+            "description": "Whole Foods Market",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-03-06",
+            "date_posted": "2026-03-06",
+            "amount": 23.15,
+            "description": "Chipotle Mexican Grill",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-03-07",
+            "date_posted": "2026-03-07",
+            "amount": 52.4,
+            "description": "Uber Ride",
+            "currency": "USD"
+          }
+        ]
+      },
+      {
+        "type": "depository",
+        "subtype": "savings",
+        "starting_balance": 27600,
+        "identity": {
+          "names": ["Maya Patel"]
+        },
+        "transactions": [
+          {
+            "date_transacted": "2026-01-02",
+            "date_posted": "2026-01-02",
+            "amount": -800,
+            "description": "Automatic Savings Transfer",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-02-01",
+            "date_posted": "2026-02-01",
+            "amount": -800,
+            "description": "Automatic Savings Transfer",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-03-01",
+            "date_posted": "2026-03-01",
+            "amount": -800,
+            "description": "Automatic Savings Transfer",
+            "currency": "USD"
+          },
+          {
+            "date_transacted": "2026-03-05",
+            "date_posted": "2026-03-05",
+            "amount": 45.2,
+            "description": "Interest Payment",
+            "currency": "USD"
+          }
+        ]
+      }
+    ]
+  }

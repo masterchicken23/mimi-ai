@@ -14,12 +14,12 @@ const CATEGORY_LABELS = {
 }
 
 const CATEGORY_COLORS = {
-  conversations: 'bg-purple-100 text-purple-700',
-  search: 'bg-sky-100 text-sky-700',
-  banking: 'bg-emerald-100 text-emerald-700',
-  calendar: 'bg-amber-100 text-amber-700',
-  email: 'bg-blue-100 text-blue-700',
-  other: 'bg-gray-100 text-gray-600',
+  conversations: 'bg-purple-500/15 text-purple-300',
+  search: 'bg-sky-500/15 text-sky-300',
+  banking: 'bg-emerald-500/15 text-emerald-300',
+  calendar: 'bg-amber-500/15 text-amber-300',
+  email: 'bg-blue-500/15 text-blue-300',
+  other: 'bg-white/[0.08] text-gray-400',
 }
 
 function guessCategory(filename, data) {
@@ -96,30 +96,19 @@ function PlaidLinkButton({ onSuccess, onConnecting }) {
       onClick={fetchLinkToken}
       disabled={loading}
       className="
-        w-full flex items-center gap-4 bg-emerald-50 rounded-xl p-4 border border-emerald-100
-        hover:bg-emerald-100 transition-all cursor-pointer text-left
-        disabled:opacity-60 disabled:cursor-wait
+        w-full flex items-center justify-center gap-2 rounded-xl py-3 px-4
+        bg-emerald-500/15 border border-emerald-500/25
+        hover:bg-emerald-500/25 transition-all cursor-pointer
+        disabled:opacity-50 disabled:cursor-wait
       "
     >
-      <div className="flex-shrink-0">
-        <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-            <line x1="1" y1="10" x2="23" y2="10" />
-          </svg>
-        </div>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-emerald-900">
-          {loading ? 'Connecting…' : 'Connect Bank Account'}
-        </p>
-        <p className="text-xs text-emerald-600 mt-0.5">
-          Securely link your bank to import balance and transactions via Plaid
-        </p>
-      </div>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-        <polyline points="9 18 15 12 9 6" />
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
       </svg>
+      <span className="text-sm font-medium text-emerald-300">
+        {loading ? 'Connecting…' : 'Connect with Plaid'}
+      </span>
     </button>
   )
 }
@@ -209,30 +198,19 @@ function OutlookConnectButton({ onSuccess, onConnecting }) {
       onClick={handleConnect}
       disabled={loading}
       className="
-        w-full flex items-center gap-4 bg-blue-50 rounded-xl p-4 border border-blue-100
-        hover:bg-blue-100 transition-all cursor-pointer text-left
-        disabled:opacity-60 disabled:cursor-wait
+        w-full flex items-center justify-center gap-2 rounded-xl py-3 px-4
+        bg-blue-500/15 border border-blue-500/25
+        hover:bg-blue-500/25 transition-all cursor-pointer
+        disabled:opacity-50 disabled:cursor-wait
       "
     >
-      <div className="flex-shrink-0">
-        <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-            <polyline points="22,6 12,13 2,6" />
-          </svg>
-        </div>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-blue-900">
-          {loading ? 'Connecting…' : 'Connect Email (Outlook)'}
-        </p>
-        <p className="text-xs text-blue-600 mt-0.5">
-          Link your Outlook account to let Mimi read and send emails on your behalf
-        </p>
-      </div>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-        <polyline points="9 18 15 12 9 6" />
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
       </svg>
+      <span className="text-sm font-medium text-blue-300">
+        {loading ? 'Connecting…' : 'Connect Outlook'}
+      </span>
     </button>
   )
 }
@@ -333,256 +311,316 @@ export default function UploadPage() {
   }
 
   const totalSources = files.length + (bankData ? 1 : 0) + (outlookData ? 1 : 0)
+  const stepsCompleted = (files.length > 0 ? 1 : 0) + (bankData ? 1 : 0) + (outlookData ? 1 : 0)
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-8 pt-8 pb-2">
-          <h1 className="text-2xl font-semibold text-gray-900">Upload your data</h1>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Skip"
-          >
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+    <div className="min-h-screen bg-[#0f0f14] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Ambient orbs */}
+      <div className="fixed top-[-15%] right-[-8%] w-[500px] h-[500px] rounded-full bg-blue-600/[0.07] blur-[100px] pointer-events-none" />
+      <div className="fixed bottom-[-10%] left-[-5%] w-[400px] h-[400px] rounded-full bg-violet-600/[0.06] blur-[100px] pointer-events-none" />
+
+      <div className="w-full max-w-5xl relative z-10">
+        {/* Welcome header */}
+        <div className="text-center mb-10 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] mb-5">
+            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            <span className="text-xs font-medium text-gray-400">Step 1 of 2 — Set up your data</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">
+            Let's get Mimi up to speed
+          </h1>
+          <p className="text-gray-400 text-base max-w-xl mx-auto leading-relaxed">
+            Connect your accounts or upload data files so Mimi can give you
+            personalized, context-aware assistance.
+          </p>
         </div>
 
-        <p className="px-8 text-sm text-gray-400 pb-4">
-          Import your data so Mimi can give you personalized advice — drop JSON files, connect your bank account, or link your email.
-        </p>
+        {/* Three-column cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8 animate-fade-in">
 
-        {/* Drop zone */}
-        <div className="px-8 pb-2">
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`
-              relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed
-              cursor-pointer transition-all duration-200
-              ${files.length > 0 ? 'py-6' : 'py-12'}
-              ${isDragging
-                ? 'border-blue-400 bg-blue-50'
-                : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100'
-              }
-            `}
-          >
-            {files.length === 0 ? (
-              <>
-                <div className="mb-3">
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                    <rect x="12" y="8" width="24" height="32" rx="3" fill="#E5E7EB" />
-                    <path d="M20 22h8M20 27h8M20 32h5" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" />
-                    <circle cx="36" cy="36" r="8" fill="#3B82F6" />
-                    <path d="M36 32v8M32 36h8" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Card 1 — Upload Files */}
+          <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl border border-white/[0.08] overflow-hidden flex flex-col">
+            <div className="p-6 flex-1 flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-xl bg-violet-500/15 flex items-center justify-center flex-shrink-0">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <polyline points="9 15 12 12 15 15" />
                   </svg>
                 </div>
-                <p className="text-gray-600 text-sm">
-                  Drag and Drop JSON files here or{' '}
-                  <span className="text-gray-900 font-medium underline underline-offset-2">
-                    Choose files
-                  </span>
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-2 justify-center px-4 mb-3">
-                  {files.map((f, i) => (
-                    <span
-                      key={i}
-                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${CATEGORY_COLORS[f.category]}`}
-                    >
-                      {f.name}
+                <div>
+                  <h3 className="text-white font-semibold text-sm">Upload Data Files</h3>
+                  <p className="text-gray-500 text-[11px]">JSON format</p>
+                </div>
+              </div>
+
+              <p className="text-gray-400 text-xs leading-relaxed mb-5">
+                Drop exported data from other apps — conversations, search history, calendar events, or any structured JSON. Mimi auto-detects the type.
+              </p>
+
+              {/* Drop zone */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`
+                  flex-1 min-h-[120px] flex flex-col items-center justify-center rounded-xl border-2 border-dashed
+                  cursor-pointer transition-all duration-200
+                  ${isDragging
+                    ? 'border-violet-400 bg-violet-500/10'
+                    : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
+                  }
+                `}
+              >
+                {files.length === 0 ? (
+                  <div className="text-center px-4 py-6">
+                    <svg width="32" height="32" viewBox="0 0 48 48" fill="none" className="mx-auto mb-2 opacity-40">
+                      <rect x="12" y="8" width="24" height="32" rx="3" fill="rgba(255,255,255,0.1)" />
+                      <path d="M20 22h8M20 27h8M20 32h5" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" />
+                      <circle cx="36" cy="36" r="8" fill="#8B5CF6" />
+                      <path d="M36 32v8M32 36h8" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <p className="text-gray-500 text-xs">
+                      Drop files or{' '}
+                      <span className="text-violet-400 font-medium underline underline-offset-2">browse</span>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="px-3 py-4 w-full">
+                    <div className="flex flex-wrap gap-1.5 justify-center mb-2">
+                      {files.map((f, i) => (
+                        <span
+                          key={i}
+                          className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full ${CATEGORY_COLORS[f.category]}`}
+                        >
+                          {f.name.length > 18 ? f.name.slice(0, 15) + '...' : f.name}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeFile(i) }}
+                            className="opacity-50 hover:opacity-100"
+                            aria-label={`Remove ${f.name}`}
+                          >
+                            <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                              <line x1="8" y1="2" x2="2" y2="8" />
+                              <line x1="2" y1="2" x2="8" y2="8" />
+                            </svg>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-gray-500 text-[10px] text-center">
+                      <span className="text-violet-400 underline underline-offset-2 cursor-pointer">Add more</span>
+                    </p>
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+
+              {parseError && (
+                <p className="text-red-400 text-[10px] mt-2">{parseError}</p>
+              )}
+            </div>
+
+            {/* Card footer */}
+            <div className="px-6 py-3 border-t border-white/[0.05] flex items-center justify-between">
+              <span className="text-[10px] text-gray-500">
+                {files.length} file{files.length !== 1 ? 's' : ''} loaded
+              </span>
+              {files.length > 0 && (
+                <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center">
+                  <svg width="10" height="10" fill="none" stroke="#a78bfa" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 5.5 3.5 8 9 2" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Card 2 — Bank Account */}
+          <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl border border-white/[0.08] overflow-hidden flex flex-col">
+            <div className="p-6 flex-1 flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                    <line x1="1" y1="10" x2="23" y2="10" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold text-sm">Bank Account</h3>
+                  <p className="text-gray-500 text-[11px]">Via Plaid (secure)</p>
+                </div>
+              </div>
+
+              <p className="text-gray-400 text-xs leading-relaxed mb-5">
+                Securely link your checking or savings account. Mimi will see your balance and recent transactions to help with budgeting and spending insights.
+              </p>
+
+              <div className="flex-1 flex flex-col justify-end">
+                {bankData ? (
+                  <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                        <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="1 8 5.5 12.5 15 3" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-emerald-300">Connected</p>
+                        <p className="text-[11px] text-emerald-400/70">
+                          {bankData.accounts?.length || 0} account{(bankData.accounts?.length || 0) !== 1 ? 's' : ''} · {bankData.transactions?.length || 0} txns
+                        </p>
+                      </div>
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          removeFile(i)
-                        }}
-                        className="opacity-60 hover:opacity-100 transition-opacity"
-                        aria-label={`Remove ${f.name}`}
+                        onClick={() => setBankData(null)}
+                        className="text-emerald-500/60 hover:text-red-400 transition-colors"
+                        aria-label="Disconnect"
                       >
                         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                          <line x1="10" y1="4" x2="4" y2="10" />
-                          <line x1="4" y1="4" x2="10" y2="10" />
+                          <line x1="11" y1="3" x2="3" y2="11" />
+                          <line x1="3" y1="3" x2="11" y2="11" />
                         </svg>
                       </button>
-                    </span>
-                  ))}
-                </div>
-                <p className="text-gray-400 text-xs">
-                  Drop more files or{' '}
-                  <span className="text-gray-600 underline underline-offset-2">browse</span>
-                </p>
-              </>
-            )}
+                    </div>
+                  </div>
+                ) : (
+                  <PlaidLinkButton
+                    onSuccess={handleBankSuccess}
+                    onConnecting={setBankConnecting}
+                  />
+                )}
+              </div>
+            </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              multiple
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
-
-          {parseError && (
-            <p className="text-red-500 text-xs mt-2 px-1">{parseError}</p>
-          )}
-
-          <div className="flex justify-between text-xs text-gray-400 mt-2 px-1">
-            <span>Supported format: JSON</span>
-            <span>{files.length} file{files.length !== 1 ? 's' : ''} loaded</span>
-          </div>
-        </div>
-
-        {/* Bank connection */}
-        <div className="px-8 py-4">
-          {bankData ? (
-            <div className="flex items-center gap-4 bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
+            <div className="px-6 py-3 border-t border-white/[0.05] flex items-center justify-between">
+              <span className="text-[10px] text-gray-500">
+                {bankData ? 'Account linked' : 'Not connected'}
+              </span>
+              {bankData && (
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <svg width="10" height="10" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 5.5 3.5 8 9 2" />
                   </svg>
                 </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-900">Bank Connected</p>
-                <p className="text-xs text-emerald-600 mt-0.5">
-                  {bankData.accounts?.length || 0} account{(bankData.accounts?.length || 0) !== 1 ? 's' : ''} · {bankData.transactions?.length || 0} transaction{(bankData.transactions?.length || 0) !== 1 ? 's' : ''} imported
-                </p>
-              </div>
-              <button
-                onClick={() => setBankData(null)}
-                className="text-emerald-400 hover:text-red-500 transition-colors flex-shrink-0"
-                aria-label="Remove bank connection"
-              >
-                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="14" y1="4" x2="4" y2="14" />
-                  <line x1="4" y1="4" x2="14" y2="14" />
-                </svg>
-              </button>
+              )}
             </div>
-          ) : (
-            <PlaidLinkButton
-              onSuccess={handleBankSuccess}
-              onConnecting={setBankConnecting}
-            />
-          )}
-        </div>
+          </div>
 
-        {/* Email connection */}
-        <div className="px-8 py-4">
-          {outlookData ? (
-            <div className="flex items-center gap-4 bg-blue-50 rounded-xl p-4 border border-blue-200">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
+          {/* Card 3 — Email */}
+          <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl border border-white/[0.08] overflow-hidden flex flex-col">
+            <div className="p-6 flex-1 flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-xl bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
                   </svg>
                 </div>
+                <div>
+                  <h3 className="text-white font-semibold text-sm">Email Inbox</h3>
+                  <p className="text-gray-500 text-[11px]">Microsoft Outlook</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-blue-900">Email Connected</p>
-                <p className="text-xs text-blue-600 mt-0.5">
-                  {outlookData.displayName || outlookData.email} · {outlookData.recentEmails?.length || 0} recent email{(outlookData.recentEmails?.length || 0) !== 1 ? 's' : ''} loaded
-                </p>
+
+              <p className="text-gray-400 text-xs leading-relaxed mb-5">
+                Connect Outlook so Mimi can read your recent emails, help you draft replies, and keep track of important messages and reminders.
+              </p>
+
+              <div className="flex-1 flex flex-col justify-end">
+                {outlookData ? (
+                  <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
+                        <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="1 8 5.5 12.5 15 3" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-blue-300">Connected</p>
+                        <p className="text-[11px] text-blue-400/70 truncate">
+                          {outlookData.displayName || outlookData.email} · {outlookData.recentEmails?.length || 0} emails
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setOutlookData(null)}
+                        className="text-blue-500/60 hover:text-red-400 transition-colors"
+                        aria-label="Disconnect"
+                      >
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <line x1="11" y1="3" x2="3" y2="11" />
+                          <line x1="3" y1="3" x2="11" y2="11" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <OutlookConnectButton
+                    onSuccess={handleOutlookSuccess}
+                    onConnecting={setOutlookConnecting}
+                  />
+                )}
               </div>
-              <button
-                onClick={() => setOutlookData(null)}
-                className="text-blue-400 hover:text-red-500 transition-colors flex-shrink-0"
-                aria-label="Remove email connection"
-              >
-                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="14" y1="4" x2="4" y2="14" />
-                  <line x1="4" y1="4" x2="14" y2="14" />
-                </svg>
-              </button>
             </div>
-          ) : (
-            <OutlookConnectButton
-              onSuccess={handleOutlookSuccess}
-              onConnecting={setOutlookConnecting}
-            />
-          )}
+
+            <div className="px-6 py-3 border-t border-white/[0.05] flex items-center justify-between">
+              <span className="text-[10px] text-gray-500">
+                {outlookData ? 'Inbox linked' : 'Not connected'}
+              </span>
+              {outlookData && (
+                <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <svg width="10" height="10" fill="none" stroke="#60a5fa" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 5.5 3.5 8 9 2" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Category legend */}
-        {(files.length > 0 || bankData || outlookData) && (
-          <div className="px-8 py-2">
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(
-                files.reduce((acc, f) => {
-                  acc[f.category] = (acc[f.category] || 0) + 1
-                  return acc
-                }, {
-                  ...(bankData ? { banking: 1 } : {}),
-                  ...(outlookData ? { email: 1 } : {}),
-                })
-              ).map(([cat, count]) => (
-                <span
-                  key={cat}
-                  className={`text-xs px-2.5 py-1 rounded-full ${CATEGORY_COLORS[cat]}`}
-                >
-                  {CATEGORY_LABELS[cat]} ({count})
-                </span>
+        {/* Bottom bar */}
+        <div className="flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-4">
+            {/* Progress dots */}
+            <div className="flex items-center gap-2">
+              {[files.length > 0, !!bankData, !!outlookData].map((done, i) => (
+                <div
+                  key={i}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    done ? 'bg-blue-400 scale-110' : 'bg-white/[0.1]'
+                  }`}
+                />
               ))}
             </div>
+            <p className="text-xs text-gray-500">
+              {totalSources > 0
+                ? `${totalSources} source${totalSources !== 1 ? 's' : ''} connected`
+                : 'No data added yet — you can always do this later'}
+            </p>
           </div>
-        )}
 
-        {/* Example section */}
-        <div className="px-8 py-4">
-          <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                </svg>
-              </div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900">Example JSON files</p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Download sample files to see the expected format for each data type.
-              </p>
-            </div>
-            <button className="flex-shrink-0 px-5 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-              Download
-            </button>
-          </div>
-        </div>
-
-        {/* Footer actions */}
-        <div className="flex items-center justify-between px-8 py-6 border-t border-gray-100">
-          <p className="text-xs text-gray-300">
-            {totalSources > 0
-              ? `${totalSources} data source${totalSources !== 1 ? 's' : ''} ready`
-              : 'No data loaded yet'}
-          </p>
           <div className="flex gap-3">
             <button
               onClick={() => navigate('/dashboard')}
-              className="px-6 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 transition-colors"
+              className="px-6 py-2.5 rounded-xl border border-white/[0.08] text-sm font-medium text-gray-400 bg-white/[0.04] hover:bg-white/[0.07] transition-colors"
             >
-              Skip
+              Skip for now
             </button>
             <button
               onClick={handleNext}
               disabled={bankConnecting || outlookConnecting}
-              className="px-6 py-2.5 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50"
+              className="px-8 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 disabled:opacity-50"
             >
-              Next
+              Continue
             </button>
           </div>
         </div>
