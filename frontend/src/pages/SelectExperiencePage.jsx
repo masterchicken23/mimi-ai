@@ -20,7 +20,8 @@ function buildDemoUserData() {
       date: t.date_transacted,
       name: t.description,
       amount: t.amount,
-      category: null,
+      // Preserve any category tags from the demo JSON so the dashboard can show spending by category
+      category: t.category || null,
       merchant: null,
     })),
   )

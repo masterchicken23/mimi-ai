@@ -163,13 +163,6 @@ function OutlookConnectButton({ onSuccess, onConnecting }) {
     setLoading(true)
     onConnecting?.(true)
 
-    const alreadyConnected = await checkOutlookStatus()
-    if (alreadyConnected) {
-      setLoading(false)
-      onConnecting?.(false)
-      return
-    }
-
     const width = 500
     const height = 700
     const left = window.screenX + (window.outerWidth - width) / 2
@@ -279,6 +272,18 @@ export default function UploadPage() {
 
   const handleOutlookSuccess = (data) => {
     setOutlookData(data)
+  }
+
+  const handleOutlookDisconnect = async () => {
+    try {
+      await fetch(`${API_BASE}/auth/outlook/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch (err) {
+      console.error('Failed to logout Outlook session:', err)
+    }
+    setOutlookData(null)
   }
 
   const handleNext = () => {
@@ -548,11 +553,11 @@ export default function UploadPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-blue-300">Connected</p>
                         <p className="text-[11px] text-blue-400/70 truncate">
-                          {outlookData.displayName || outlookData.email} · {outlookData.recentEmails?.length || 0} emails
+                          {outlookData.email || outlookData.displayName}
                         </p>
                       </div>
                       <button
-                        onClick={() => setOutlookData(null)}
+                        onClick={handleOutlookDisconnect}
                         className="text-blue-500/60 hover:text-red-400 transition-colors"
                         aria-label="Disconnect"
                       >

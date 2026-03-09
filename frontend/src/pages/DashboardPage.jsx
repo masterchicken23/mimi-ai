@@ -385,6 +385,7 @@ function mapApiEmailToView(msg) {
     subject: msg.subject || '(No subject)',
     preview: msg.bodyPreview || '',
     time: formatEmailTime(msg.receivedAt),
+    receivedAtRaw: msg.receivedAt,
     unread: !msg.isRead,
   }
 }
@@ -396,6 +397,7 @@ function mapUserDataEmailToView(email) {
     subject: email.subject || '(No subject)',
     preview: email.preview || '',
     time: formatEmailTime(email.receivedAt),
+    receivedAtRaw: email.receivedAt,
     unread: !email.isRead,
   }
 }
@@ -622,18 +624,6 @@ export default function DashboardPage() {
 
   const connectOutlook = async () => {
     setEmailConnectLoading(true)
-    try {
-      const res = await fetch(`${API_BASE}/auth/outlook/status`, { credentials: 'include' })
-      const data = await res.json()
-      if (data.authenticated) {
-        setOutlookUserId(data.userId)
-        setEmailConnectLoading(false)
-        return
-      }
-    } catch (err) {
-      console.error('Failed to check Outlook status:', err)
-    }
-
     const width = 500, height = 700
     const left = window.screenX + (window.outerWidth - width) / 2
     const top = window.screenY + (window.outerHeight - height) / 2
@@ -656,6 +646,25 @@ export default function DashboardPage() {
         setEmailConnectLoading(false)
       }
     }, 500)
+  }
+
+  const disconnectOutlook = async () => {
+    setEmailConnectLoading(true)
+    try {
+      await fetch(`${API_BASE}/auth/outlook/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch (err) {
+      console.error('Failed to logout Outlook session:', err)
+    } finally {
+      setOutlookUserId(null)
+      setInboxEmails([])
+      setOutlookConnected(false)
+      setEmailsError(null)
+      setEmailsLoading(false)
+      setEmailConnectLoading(false)
+    }
   }
 
   const bankSummary = parseBankSummary(userData)
@@ -791,14 +800,25 @@ export default function DashboardPage() {
 
     // Append live Outlook inbox so VAPI can actually read emails
     if (emailConnected) {
-      const emailLines = inboxEmails
-        .map(
-          (e, i) =>
-            `${i + 1}. From: ${e.sender} | Subject: ${e.subject} | Status: ${e.unread ? 'UNREAD' : 'read'} | Received: ${e.time}${e.preview ? ` | Preview: "${e.preview}"` : ''}`,
-        )
+      const sortedEmails = [...inboxEmails].sort((a, b) => {
+        const aTime = a.receivedAtRaw ? new Date(a.receivedAtRaw).getTime() : 0
+        const bTime = b.receivedAtRaw ? new Date(b.receivedAtRaw).getTime() : 0
+        return bTime - aTime
+      })
+
+      const emailLines = sortedEmails
+        .map((e, i) => {
+          const iso = e.receivedAtRaw ? new Date(e.receivedAtRaw).toISOString() : 'unknown'
+          const relative = e.time || ''
+          return `${i + 1}. [${e.unread ? 'UNREAD' : 'read'}] From: ${e.sender} | Subject: ${e.subject} | Received: ${iso}${
+            relative ? ` (${relative})` : ''
+          }${e.preview ? ` | Preview: "${e.preview}"` : ''}`
+        })
         .join('\n')
+
       context +=
-        `\n\n--- EMAIL INBOX (ordered newest first, ${inboxEmails.length} emails) ---\n` +
+        `\n\n--- EMAIL INBOX ---\n` +
+        `Emails are listed from most recent (1) to oldest.\n` +
         emailLines
     }
 
@@ -1176,7 +1196,16 @@ export default function DashboardPage() {
           {/* RIGHT — Email */}
           <div className="transition-all duration-700 ease-in-out flex-shrink-0 w-full lg:w-72">
             {hasEmailData ? (
-              <EmailInbox emails={inboxEmails} loading={emailsLoading} error={emailsError} />
+              <div className="space-y-3">
+                <EmailInbox emails={inboxEmails} loading={emailsLoading} error={emailsError} />
+                <button
+                  onClick={disconnectOutlook}
+                  disabled={emailConnectLoading}
+                  className="w-full px-4 py-2 rounded-xl border border-white/[0.08] text-[11px] font-medium text-gray-300 bg-white/[0.03] hover:bg-white/[0.06] disabled:opacity-50 transition-colors"
+                >
+                  Disconnect Outlook
+                </button>
+              </div>
             ) : (
               <div
                 onClick={() => !demoMode && !emailConnectLoading && connectOutlook()}
