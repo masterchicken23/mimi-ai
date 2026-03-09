@@ -458,7 +458,7 @@ function EmailInbox({ emails, loading, error }) {
       )}
 
       {!loading && emails.length > 0 && (
-        <div className="flex flex-col max-h-[480px] overflow-y-auto">
+        <div className="flex flex-col max-h-[220px] overflow-y-auto">
           {emails.map((email) => (
             <div
               key={email.id}
@@ -488,6 +488,65 @@ function EmailInbox({ emails, loading, error }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+const PLACEHOLDER_EVENTS = [
+  { id: 1, title: 'Morning Standup', time: '9:00 AM – 9:30 AM', date: 'Today' },
+  { id: 2, title: 'Dr. Klein — Case Review', time: '11:00 AM – 12:00 PM', date: 'Today' },
+  { id: 3, title: 'Lunch with Alex', time: '1:00 PM – 2:00 PM', date: 'Today' },
+  { id: 4, title: 'ICU Rotation Shift', time: '3:00 PM – 11:00 PM', date: 'Tomorrow' },
+  { id: 5, title: 'Yoga — Downtown Studio', time: '6:30 PM – 7:30 PM', date: 'Wed' },
+  { id: 6, title: 'Student Loan Payment Due', time: 'All day', date: 'Mar 15' },
+]
+
+function CalendarCard({ events = PLACEHOLDER_EVENTS }) {
+  const upcoming = events.filter((_, i) => i < 6)
+
+  return (
+    <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl shadow-sm border border-white/[0.08] overflow-hidden w-full animate-fade-in">
+      <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </div>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+            Calendar
+          </p>
+        </div>
+        <span className="text-[10px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+          {upcoming.length} upcoming
+        </span>
+      </div>
+
+      <div className="flex flex-col max-h-[220px] overflow-y-auto">
+        {upcoming.map((evt) => (
+          <div
+            key={evt.id}
+            className="px-5 py-2.5 border-t border-white/[0.04] hover:bg-emerald-500/[0.06] transition-colors"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-gray-200 truncate">
+                  {evt.title}
+                </p>
+                <p className="text-[11px] text-emerald-400/70 mt-0.5">
+                  {evt.time}
+                </p>
+              </div>
+              <span className="text-[10px] text-gray-500 flex-shrink-0 mt-0.5">
+                {evt.date}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -540,6 +599,9 @@ const IGNORED_KEYS = new Set([
 
 const tipsTips = [
   'Ask Mimi to summarize your recent spending habits.',
+  'Ask Mimi to toggle the financial dashboard view',
+  'Ask Mimi to read your most recent email',
+  'Ask Mimi what your next calendar appointment is',
 ]
 
 export default function DashboardPage() {
@@ -566,7 +628,7 @@ export default function DashboardPage() {
   const [emailsLoading, setEmailsLoading] = useState(false)
   const [emailsError, setEmailsError] = useState(null)
   const [outlookConnected, setOutlookConnected] = useState(false)
-  const [tipIndex, setTipIndex] = useState(0)
+  const [tipIndex] = useState(() => Math.floor(Math.random() * tipsTips.length))
 
   // Inline Plaid bank connection
   const [bankLinkToken, setBankLinkToken] = useState(null)
@@ -678,15 +740,6 @@ export default function DashboardPage() {
     return txns
   }, [userData])
 
-  // Rotating tips
-  useEffect(() => {
-    if (tipsTips.length <= 1) return
-    const interval = setInterval(() => {
-      setTipIndex((prev) => (prev + 1) % tipsTips.length)
-    }, 7000)
-    return () => clearInterval(interval)
-  }, [])
-
   // VAPI
   useEffect(() => {
     const vapi = new Vapi(VAPI_PUBLIC_KEY)
@@ -720,8 +773,8 @@ export default function DashboardPage() {
 
           // Fallback client-side end-call detection (safety net)
           const END_PHRASES = [
-            'end call', 'end this call', 'goodbye', 'good bye',
-            'bye bye', 'bye mimi', 'bye-bye',
+            'end this call', 'goodbye', 'good bye',
+            'bye bye', 'bye mimi', 'bye-bye', 'bye'
           ]
           const isExactBye = spoken === 'bye' || spoken === 'thanks bye'
           if (isExactBye || END_PHRASES.some((p) => spoken.includes(p))) {
@@ -918,10 +971,14 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-4">
           <p className="text-gray-400 text-sm">
-            Mimi — Personal Assistant to{' '}
-            <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent font-medium">
-              {userName}
-            </span>
+            Mimi — The Personal Assistant{userName && userName !== 'User' && (
+              <>
+                {' to '}
+                <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent font-medium">
+                  {userName}
+                </span>
+              </>
+            )}
           </p>
         </div>
       </header>
@@ -1042,12 +1099,12 @@ export default function DashboardPage() {
                     Ready when you are
                   </h2>
 
-                  <p className="text-gray-400 text-sm mb-1.5 text-center max-w-sm leading-relaxed">
-                    Mimi is your personal AI assistant — ready to help with finances, emails, scheduling, and anything you need.
+                  <p className="text-gray-400 text-sm mb-3 text-center max-w-sm leading-relaxed">
+                    Mimi is here for you — ready to help with finances, emails, scheduling, and anything you need.
                   </p>
 
-                  <p className="text-gray-500 text-xs mb-7 text-center">
-                    Press space or tap below to begin.
+                  <p className="text-gray-500 text-xs mb-5 text-center">
+                    Press <span className="text-green-400/70 font-medium">space</span> or tap below to begin.
                   </p>
 
                   <button
@@ -1061,8 +1118,8 @@ export default function DashboardPage() {
                     Start Conversation
                   </button>
 
-                  <p className="text-gray-500 text-xs mt-5">
-                    say <span className="text-red-400/70 font-medium">"end call"</span> or <span className="text-red-400/70 font-medium">"bye bye"</span> to stop
+                  <p className="text-gray-500 text-xs mt-7">
+                    say <span className="text-red-400/70 font-medium">"bye bye"</span> to stop conversation
                   </p>
                 </div>
               )}
@@ -1198,6 +1255,7 @@ export default function DashboardPage() {
             {hasEmailData ? (
               <div className="space-y-3">
                 <EmailInbox emails={inboxEmails} loading={emailsLoading} error={emailsError} />
+                <CalendarCard />
                 <button
                   onClick={disconnectOutlook}
                   disabled={emailConnectLoading}
@@ -1241,7 +1299,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Tips */}
         <div className="mt-8 text-center">
           <p className="text-gray-500 text-xs">
             <span className="text-gray-400 font-medium">Tip:</span>{' '}
