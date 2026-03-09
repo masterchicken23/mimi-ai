@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts'
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
 const VAPI_PUBLIC_KEY = import.meta.env.VITE_VAPI_PUBLIC_KEY
 const ASSISTANT_ID = '998c3e7f-ed8c-4afb-a49c-40cf6649911c'
 
@@ -354,18 +355,64 @@ function MonthlyChart({ transactions }) {
   )
 }
 
-const PLACEHOLDER_EMAILS = [
-  { id: 1, sender: 'Dr. Sarah Chen', subject: 'Your appointment is confirmed for March 12', time: '10:32 AM', unread: true },
-  { id: 2, sender: 'Chase Bank', subject: 'Your monthly statement is ready', time: '9:15 AM', unread: true },
-  { id: 3, sender: 'Alex (Partner)', subject: 'Groceries list for tonight', time: 'Yesterday', unread: false },
-  { id: 4, sender: 'Whole Foods Market', subject: 'Your receipt from March 7', time: 'Yesterday', unread: false },
-  { id: 5, sender: 'CVS Pharmacy', subject: 'Prescription ready for pickup', time: 'Mar 6', unread: false },
-  { id: 6, sender: 'Spotify', subject: 'Your weekly Discover playlist', time: 'Mar 5', unread: false },
-  { id: 7, sender: 'Google Calendar', subject: 'Reminder: Physical therapy tomorrow', time: 'Mar 5', unread: false },
-]
+function formatEmailTime(isoString) {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  const now = new Date()
+  const diffMs = now - date
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-function EmailInbox() {
-  const unreadCount = PLACEHOLDER_EMAILS.filter((e) => e.unread).length
+  const isToday = date.toDateString() === now.toDateString()
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const isYesterday = date.toDateString() === yesterday.toDateString()
+
+  if (isToday) {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  }
+  if (isYesterday) return 'Yesterday'
+  if (diffDays < 7) {
+    return date.toLocaleDateString('en-US', { weekday: 'short' })
+  }
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function mapApiEmailToView(msg) {
+  return {
+    id: msg.id,
+    sender: msg.from?.emailAddress?.name || msg.from?.emailAddress?.address || 'Unknown',
+    subject: msg.subject || '(No subject)',
+    preview: msg.bodyPreview || '',
+    time: formatEmailTime(msg.receivedAt),
+    unread: !msg.isRead,
+  }
+}
+
+function mapUserDataEmailToView(email) {
+  return {
+    id: email.from + email.receivedAt,
+    sender: email.fromName || email.from || 'Unknown',
+    subject: email.subject || '(No subject)',
+    preview: email.preview || '',
+    time: formatEmailTime(email.receivedAt),
+    unread: !email.isRead,
+  }
+}
+
+function extractUserDataEmails(userData) {
+  const emailEntries = userData?.email || []
+  const emails = []
+  for (const entry of emailEntries) {
+    const recentEmails = entry.data?.recentEmails || []
+    for (const em of recentEmails) {
+      emails.push(mapUserDataEmailToView(em))
+    }
+  }
+  return emails
+}
+
+function EmailInbox({ emails, loading, error }) {
+  const unreadCount = emails.filter((e) => e.unread).length
 
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100/80 overflow-hidden w-full animate-fade-in">
@@ -388,35 +435,56 @@ function EmailInbox() {
         )}
       </div>
 
-      <div className="flex flex-col">
-        {PLACEHOLDER_EMAILS.map((email) => (
-          <div
-            key={email.id}
-            className={`
-              px-5 py-3 border-t border-gray-50 cursor-pointer
-              hover:bg-violet-50/40 transition-colors
-              ${email.unread ? 'bg-violet-50/20' : ''}
-            `}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  {email.unread && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0" />
-                  )}
-                  <p className={`text-xs truncate ${email.unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}`}>
-                    {email.sender}
+      {loading && (
+        <div className="px-5 py-8 text-center">
+          <div className="w-5 h-5 border-2 border-violet-200 border-t-violet-500 rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-xs text-gray-400">Loading inbox…</p>
+        </div>
+      )}
+
+      {error && !loading && emails.length === 0 && (
+        <div className="px-5 py-6 text-center">
+          <p className="text-xs text-gray-400">Could not load emails</p>
+        </div>
+      )}
+
+      {!loading && emails.length === 0 && !error && (
+        <div className="px-5 py-6 text-center">
+          <p className="text-xs text-gray-400">Inbox is empty</p>
+        </div>
+      )}
+
+      {!loading && emails.length > 0 && (
+        <div className="flex flex-col max-h-[480px] overflow-y-auto">
+          {emails.map((email) => (
+            <div
+              key={email.id}
+              className={`
+                px-5 py-3 border-t border-gray-50 cursor-pointer
+                hover:bg-violet-50/40 transition-colors
+                ${email.unread ? 'bg-violet-50/20' : ''}
+              `}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    {email.unread && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0" />
+                    )}
+                    <p className={`text-xs truncate ${email.unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}`}>
+                      {email.sender}
+                    </p>
+                  </div>
+                  <p className={`text-[11px] truncate mt-0.5 ${email.unread ? 'text-gray-700' : 'text-gray-400'}`}>
+                    {email.subject}
                   </p>
                 </div>
-                <p className={`text-[11px] truncate mt-0.5 ${email.unread ? 'text-gray-700' : 'text-gray-400'}`}>
-                  {email.subject}
-                </p>
+                <span className="text-[10px] text-gray-300 flex-shrink-0 mt-0.5">{email.time}</span>
               </div>
-              <span className="text-[10px] text-gray-300 flex-shrink-0 mt-0.5">{email.time}</span>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -448,6 +516,7 @@ function buildContextString(userData) {
 export default function DashboardPage() {
   const { state } = useLocation()
   const userData = state?.userData || {}
+  const outlookUserId = state?.outlookUserId || null
   const userContext = useRef(buildContextString(userData))
 
   const vapiRef = useRef(null)
@@ -459,6 +528,10 @@ export default function DashboardPage() {
   const [userName] = useState('User')
 
   const [panelView, setPanelView] = useState(PANEL_VIEWS.SUMMARY)
+  const [inboxEmails, setInboxEmails] = useState([])
+  const [emailsLoading, setEmailsLoading] = useState(false)
+  const [emailsError, setEmailsError] = useState(null)
+  const [outlookConnected, setOutlookConnected] = useState(false)
 
   const bankSummary = parseBankSummary(userData)
   const allTransactions = useMemo(() => {
@@ -469,7 +542,6 @@ export default function DashboardPage() {
     }
     return txns
   }, [userData])
-  const fileCount = Object.values(userData).reduce((sum, arr) => sum + arr.length, 0)
 
   useEffect(() => {
     const vapi = new Vapi(VAPI_PUBLIC_KEY)
@@ -513,6 +585,46 @@ export default function DashboardPage() {
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [transcript])
+
+  useEffect(() => {
+    if (!outlookUserId) {
+      const fallback = extractUserDataEmails(userData)
+      if (fallback.length > 0) setInboxEmails(fallback)
+      return
+    }
+
+    let cancelled = false
+    setOutlookConnected(true)
+
+    async function fetchInbox() {
+      setEmailsLoading(true)
+      setEmailsError(null)
+      try {
+        const res = await fetch(`${API_BASE}/api/email/messages?top=15`, {
+          credentials: 'include',
+          headers: { 'X-Outlook-User-Id': outlookUserId },
+        })
+        if (!res.ok) throw new Error('Failed to fetch emails')
+        const data = await res.json()
+
+        if (!cancelled) {
+          setInboxEmails((data.messages || []).map(mapApiEmailToView))
+        }
+      } catch (err) {
+        console.error('Email fetch error:', err)
+        if (!cancelled) {
+          setEmailsError(err.message)
+          const fallback = extractUserDataEmails(userData)
+          if (fallback.length > 0) setInboxEmails(fallback)
+        }
+      } finally {
+        if (!cancelled) setEmailsLoading(false)
+      }
+    }
+
+    fetchInbox()
+    return () => { cancelled = true }
+  }, [outlookUserId])
 
   const startCall = async () => {
     setStatus(STATUS.CONNECTING)
@@ -566,13 +678,11 @@ export default function DashboardPage() {
           <span className="text-gray-900 font-semibold text-lg">Mimi</span>
         </div>
         <div className="flex items-center gap-4">
-          {fileCount > 0 && (
-            <span className="text-xs bg-blue-500/10 text-blue-600 px-3 py-1 rounded-full font-medium">
-              {fileCount} file{fileCount !== 1 ? 's' : ''} loaded
-            </span>
-          )}
           <p className="text-gray-500 text-sm">
-            Mimi — Personal Assistant to <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent font-medium">{userName}</span>
+            Mimi — Personal Assistant to{' '}
+            <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent font-medium">
+              {userName}
+            </span>
           </p>
         </div>
       </header>
@@ -583,8 +693,8 @@ export default function DashboardPage() {
           className={`
             flex gap-5 items-start justify-center transition-all duration-700 ease-in-out
             w-full
-            ${bankSummary ? 'max-w-7xl' : hasStarted ? 'max-w-2xl' : 'max-w-md'}
-            ${bankSummary ? 'flex-col lg:flex-row' : 'flex-col'}
+            ${(bankSummary || outlookConnected || inboxEmails.length > 0) ? 'max-w-7xl' : hasStarted ? 'max-w-2xl' : 'max-w-md'}
+            ${(bankSummary || outlookConnected || inboxEmails.length > 0) ? 'flex-col lg:flex-row' : 'flex-col'}
           `}
         >
           {bankSummary && (
@@ -652,8 +762,8 @@ export default function DashboardPage() {
           <div
             className={`
               w-full transition-all duration-700 ease-in-out
-              ${!bankSummary && hasStarted ? 'max-w-2xl' : !bankSummary ? 'max-w-md' : ''}
-              ${bankSummary ? 'flex-1 min-w-0' : ''}
+              ${!(bankSummary || outlookConnected || inboxEmails.length > 0) && hasStarted ? 'max-w-2xl' : !(bankSummary || outlookConnected || inboxEmails.length > 0) ? 'max-w-md' : ''}
+              ${(bankSummary || outlookConnected || inboxEmails.length > 0) ? 'flex-1 min-w-0' : ''}
             `}
           >
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100/80 overflow-hidden">
@@ -823,14 +933,14 @@ export default function DashboardPage() {
           </div>
           </div>
 
-          {bankSummary && (
+          {(outlookConnected || inboxEmails.length > 0 || emailsLoading) && (
             <div
               className={`
                 transition-all duration-700 ease-in-out flex-shrink-0
                 w-full lg:w-72
               `}
             >
-              <EmailInbox />
+              <EmailInbox emails={inboxEmails} loading={emailsLoading} error={emailsError} />
             </div>
           )}
         </div>

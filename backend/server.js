@@ -142,10 +142,22 @@ async function consumeOutlookState(state) {
   }
 }
 
+const OUTLOOK_LAST_USER_PATH = path.join(OUTLOOK_TOKEN_DIR, '_last_user.json')
+
 async function persistOutlookTokenCache(userId, serializedCache) {
   outlookTokenCacheStore.set(userId, serializedCache)
   await fs.mkdir(OUTLOOK_TOKEN_DIR, { recursive: true })
   await fs.writeFile(getOutlookTokenPath(userId), serializedCache, 'utf8')
+  await fs.writeFile(OUTLOOK_LAST_USER_PATH, JSON.stringify({ userId }), 'utf8')
+}
+
+async function getLastOutlookUserId() {
+  try {
+    const data = JSON.parse(await fs.readFile(OUTLOOK_LAST_USER_PATH, 'utf8'))
+    return data.userId || null
+  } catch {
+    return null
+  }
 }
 
 async function readOutlookTokenCache(userId) {
@@ -252,15 +264,8 @@ async function graphRequest(method, resourcePath, accessToken, { query, body } =
   return response.json()
 }
 
-async function getOutlookAccessToken(req) {
-  const outlookSession = req.session.outlook
-  if (!outlookSession?.userId) {
-    const error = new Error('Not authenticated. Please connect your Outlook account first.')
-    error.statusCode = 401
-    throw error
-  }
-
-  const serializedCache = await readOutlookTokenCache(outlookSession.userId)
+async function getOutlookAccessTokenByUserId(userId) {
+  const serializedCache = await readOutlookTokenCache(userId)
   if (!serializedCache) {
     const error = new Error('No cached Outlook session found. Please authenticate again.')
     error.statusCode = 401
@@ -289,8 +294,79 @@ async function getOutlookAccessToken(req) {
     throw error
   }
 
-  await persistOutlookTokenCache(outlookSession.userId, await tokenCache.serialize())
+  await persistOutlookTokenCache(userId, await tokenCache.serialize())
   return result.accessToken
+}
+
+async function getOutlookAccessTokenFallback() {
+  const files = await fs.readdir(OUTLOOK_TOKEN_DIR).catch(() => [])
+  const cacheFiles = files.filter((f) => f !== '_last_user.json' && f.endsWith('.json'))
+  const preferredUserId = await getLastOutlookUserId()
+
+  const withStats = await Promise.all(
+    cacheFiles.map(async (f) => {
+      const stat = await fs.stat(path.join(OUTLOOK_TOKEN_DIR, f))
+      return { file: f, mtime: stat.mtimeMs }
+    }),
+  )
+  withStats.sort((a, b) => b.mtime - a.mtime)
+
+  const allCandidates = []
+
+  for (const { file } of withStats) {
+    try {
+      const filePath = path.join(OUTLOOK_TOKEN_DIR, file)
+      const serialized = await fs.readFile(filePath, 'utf8')
+      const appInstance = createMsalApp()
+      const tokenCache = appInstance.getTokenCache()
+      await tokenCache.deserialize(serialized)
+      const accounts = await tokenCache.getAllAccounts()
+      for (const account of accounts) {
+        const isPreferred = preferredUserId && account.homeAccountId === preferredUserId
+        allCandidates.push({ account, appInstance, tokenCache, filePath, isPreferred })
+      }
+    } catch {
+      continue
+    }
+  }
+
+  allCandidates.sort((a, b) => (b.isPreferred ? 1 : 0) - (a.isPreferred ? 1 : 0))
+
+  for (const { account, appInstance, tokenCache, filePath, isPreferred } of allCandidates) {
+    try {
+      const result = await appInstance.acquireTokenSilent({
+        account,
+        scopes: OUTLOOK_SCOPES,
+      })
+      if (result?.accessToken) {
+        await fs.writeFile(filePath, await tokenCache.serialize(), 'utf8')
+        return result.accessToken
+      }
+    } catch {
+      continue
+    }
+  }
+
+  const error = new Error('No valid Outlook session found. Please authenticate again.')
+  error.statusCode = 401
+  throw error
+}
+
+async function getOutlookAccessToken(req) {
+  const userId =
+    req.outlookUserId ||
+    req.session?.outlook?.userId ||
+    req.headers['x-outlook-user-id']
+
+  if (userId) {
+    try {
+      return await getOutlookAccessTokenByUserId(userId)
+    } catch {
+      // userId didn't work — fall through to fallback
+    }
+  }
+
+  return getOutlookAccessTokenFallback()
 }
 
 function getBodyValue(body, camelKey, snakeKey, fallback) {
@@ -321,13 +397,27 @@ function buildDraftPayload(body, { partial = false } = {}) {
   return payload
 }
 
-function requireOutlookSession(req, res, next) {
-  if (!req.session.outlook?.userId) {
-    return res.status(401).json({
-      error: 'Not authenticated. Please connect your Outlook account first.',
-    })
+async function requireOutlookSession(req, res, next) {
+  const userId =
+    req.session?.outlook?.userId ||
+    req.headers['x-outlook-user-id'] ||
+    await getLastOutlookUserId()
+
+  if (userId) {
+    req.outlookUserId = userId
+    return next()
   }
-  next()
+
+  try {
+    const files = await fs.readdir(OUTLOOK_TOKEN_DIR).catch(() => [])
+    if (files.some((f) => f !== '_last_user.json' && f.endsWith('.json'))) {
+      return next()
+    }
+  } catch {}
+
+  return res.status(401).json({
+    error: 'Not authenticated. Please connect your Outlook account first.',
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -495,22 +585,40 @@ app.get('/auth/outlook/callback', async (req, res) => {
 
 app.get('/auth/outlook/status', async (req, res) => {
   const outlookSession = req.session.outlook
-  if (!outlookSession?.userId) {
-    return res.json({ authenticated: false })
+  let userId = outlookSession?.userId
+
+  if (!userId) {
+    userId = req.headers['x-outlook-user-id'] || await getLastOutlookUserId()
   }
 
-  const serializedCache = await readOutlookTokenCache(outlookSession.userId)
-  if (!serializedCache) {
-    return res.json({ authenticated: false })
+  if (userId) {
+    const serializedCache = await readOutlookTokenCache(userId)
+    if (serializedCache) {
+      return res.json({
+        authenticated: true,
+        provider: 'outlook',
+        userId,
+        displayName: outlookSession?.displayName || '',
+        email: outlookSession?.email || '',
+      })
+    }
   }
 
-  res.json({
-    authenticated: true,
-    provider: 'outlook',
-    userId: outlookSession.userId,
-    displayName: outlookSession.displayName,
-    email: outlookSession.email,
-  })
+  try {
+    const files = await fs.readdir(OUTLOOK_TOKEN_DIR).catch(() => [])
+    const cacheFile = files.find((f) => f !== '_last_user.json' && f.endsWith('.json'))
+    if (cacheFile) {
+      return res.json({
+        authenticated: true,
+        provider: 'outlook',
+        userId: '',
+        displayName: outlookSession?.displayName || '',
+        email: outlookSession?.email || '',
+      })
+    }
+  } catch {}
+
+  res.json({ authenticated: false })
 })
 
 app.post('/auth/outlook/logout', async (req, res) => {
@@ -535,25 +643,23 @@ app.get('/api/email/messages', requireOutlookSession, async (req, res) => {
     const folder = String(req.query.folder || 'inbox')
     const top = Number(req.query.top || 25)
     const skip = Number(req.query.skip || 0)
-    const search = req.query.search ? String(req.query.search) : null
     const orderBy = String(req.query.order_by || req.query.orderBy || 'receivedDateTime desc')
+
+    const query = {
+      $top: top,
+      $skip: skip,
+      $orderby: orderBy,
+      $select:
+        'id,subject,bodyPreview,from,toRecipients,ccRecipients,bccRecipients,' +
+        'receivedDateTime,sentDateTime,isRead,isDraft,importance,' +
+        'hasAttachments,conversationId,parentFolderId,webLink',
+    }
 
     const data = await graphRequest(
       'GET',
       `/me/mailFolders/${encodeSegment(folder)}/messages`,
       accessToken,
-      {
-        query: {
-          $top: top,
-          $skip: skip,
-          $orderby: orderBy,
-          $search: search ? `"${search}"` : undefined,
-          $select:
-            'id,subject,bodyPreview,from,toRecipients,ccRecipients,bccRecipients,' +
-            'receivedDateTime,sentDateTime,isRead,isDraft,importance,' +
-            'hasAttachments,conversationId,parentFolderId,webLink',
-        },
-      },
+      { query },
     )
 
     res.json({
@@ -747,6 +853,31 @@ app.get('/health', (req, res) => {
   })
 })
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Backend running on ${BACKEND_ORIGIN}`)
+
+  try {
+    const lastUser = await getLastOutlookUserId()
+    if (!lastUser) {
+      const files = await fs.readdir(OUTLOOK_TOKEN_DIR).catch(() => [])
+      const cacheFile = files.find((f) => f !== '_last_user.json' && f.endsWith('.json'))
+      if (cacheFile) {
+        const serialized = await fs.readFile(path.join(OUTLOOK_TOKEN_DIR, cacheFile), 'utf8')
+        const appInstance = createMsalApp()
+        const tokenCache = appInstance.getTokenCache()
+        await tokenCache.deserialize(serialized)
+        const accounts = await tokenCache.getAllAccounts()
+        if (accounts.length > 0) {
+          const userId = accounts[0].homeAccountId || accounts[0].localAccountId
+          if (userId) {
+            await fs.writeFile(OUTLOOK_LAST_USER_PATH, JSON.stringify({ userId }), 'utf8')
+            outlookTokenCacheStore.set(userId, serialized)
+            console.log(`Restored Outlook session for user: ${userId}`)
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.log('Could not restore Outlook session on startup:', err.message)
+  }
 })

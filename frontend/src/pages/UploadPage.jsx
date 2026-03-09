@@ -129,7 +129,7 @@ function OutlookConnectButton({ onSuccess, onConnecting }) {
 
   const fetchRecentEmails = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/email/messages?top=5`, {
+      const res = await fetch(`${API_BASE}/api/email/messages?top=10`, {
         credentials: 'include',
       })
       if (!res.ok) return []
@@ -329,7 +329,7 @@ export default function UploadPage() {
       })
     }
 
-    navigate('/dashboard', { state: { userData } })
+    navigate('/dashboard', { state: { userData, outlookUserId: outlookData?.userId || null } })
   }
 
   const totalSources = files.length + (bankData ? 1 : 0) + (outlookData ? 1 : 0)
