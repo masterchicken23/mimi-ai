@@ -14,3 +14,49 @@
 .animate-fade-in {
   animation: fade-in 0.5s ease-out;
 }
+
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes float-slower {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-40px, 25px) scale(1.08); }
+}
+
+.dashboard-bg {
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 30%, #f5f3ff 50%, #fdf2f8 70%, #f8fafc 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-bg::before,
+.dashboard-bg::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dashboard-bg::before {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #c7d2fe, transparent);
+  top: -10%;
+  right: -5%;
+  animation: float-slow 20s ease-in-out infinite;
+}
+
+.dashboard-bg::after {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #ddd6fe, transparent);
+  bottom: -10%;
+  left: -5%;
+  animation: float-slower 25s ease-in-out infinite;
+}
