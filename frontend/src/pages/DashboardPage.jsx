@@ -168,25 +168,16 @@ const PANEL_VIEWS = {
   MONTHLY: 'monthly',
 }
 
-const INTENT_RULES = [
-  {
-    view: PANEL_VIEWS.CATEGORY,
-    keywords: ['transaction insight', 'spending by category', 'category breakdown', 'where am i spending', 'spending categories'],
-  },
-  {
-    view: PANEL_VIEWS.MONTHLY,
-    keywords: ['spending per month', 'monthly spending', 'monthly breakdown', 'month by month', 'last few months'],
-  },
-  {
-    view: PANEL_VIEWS.SUMMARY,
-    keywords: ['go back', 'show summary', 'back to summary', 'account summary', 'show my balance'],
-  },
-]
+const PANEL_TRIGGERS = {
+  [PANEL_VIEWS.CATEGORY]: ['categories', 'category view'],
+  [PANEL_VIEWS.MONTHLY]: ['monthly', 'monthly view', 'monthly spending'],
+  [PANEL_VIEWS.SUMMARY]: ['summary', 'summary view'],
+}
 
 function detectPanelIntent(spoken) {
-  const lower = spoken.toLowerCase()
-  for (const rule of INTENT_RULES) {
-    if (rule.keywords.some((kw) => lower.includes(kw))) return rule.view
+  const lower = spoken.toLowerCase().trim()
+  for (const [view, triggers] of Object.entries(PANEL_TRIGGERS)) {
+    if (triggers.some((t) => lower === t || lower.includes(t))) return view
   }
   return null
 }
@@ -846,10 +837,17 @@ export default function DashboardPage() {
         if (msg.role === 'user') {
           const spoken = msg.transcript.toLowerCase().trim()
 
+          // Dashboard view switching takes priority — never end call on a view trigger
+          const intent = detectPanelIntent(spoken)
+          if (intent) {
+            setPanelView(intent)
+            return
+          }
+
           // Fallback client-side end-call detection (safety net)
           const END_PHRASES = [
             'end this call', 'goodbye', 'good bye',
-            'bye bye', 'bye mimi', 'bye-bye', 'bye'
+            'bye bye', 'bye mimi', 'bye-bye',
           ]
           const isExactBye = spoken === 'bye' || spoken === 'thanks bye'
           if (isExactBye || END_PHRASES.some((p) => spoken.includes(p))) {
@@ -857,9 +855,6 @@ export default function DashboardPage() {
             vapi.stop()
             return
           }
-
-          const intent = detectPanelIntent(spoken)
-          if (intent) setPanelView(intent)
         }
       }
     })
