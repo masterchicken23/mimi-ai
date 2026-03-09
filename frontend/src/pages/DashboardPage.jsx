@@ -492,17 +492,65 @@ function EmailInbox({ emails, loading, error }) {
   )
 }
 
-const PLACEHOLDER_EVENTS = [
-  { id: 1, title: 'Morning Standup', time: '9:00 AM – 9:30 AM', date: 'Today' },
-  { id: 2, title: 'Dr. Klein — Case Review', time: '11:00 AM – 12:00 PM', date: 'Today' },
-  { id: 3, title: 'Lunch with Alex', time: '1:00 PM – 2:00 PM', date: 'Today' },
-  { id: 4, title: 'ICU Rotation Shift', time: '3:00 PM – 11:00 PM', date: 'Tomorrow' },
-  { id: 5, title: 'Yoga — Downtown Studio', time: '6:30 PM – 7:30 PM', date: 'Wed' },
-  { id: 6, title: 'Student Loan Payment Due', time: 'All day', date: 'Mar 15' },
-]
+function formatEventDate(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  const now = new Date()
+  if (d.toDateString() === now.toDateString()) return 'Today'
+  const tomorrow = new Date(now)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow'
+  const diffDays = Math.floor((d - now) / (1000 * 60 * 60 * 24))
+  if (diffDays >= 0 && diffDays < 7) return d.toLocaleDateString('en-US', { weekday: 'short' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
 
-function CalendarCard({ events = PLACEHOLDER_EVENTS }) {
-  const upcoming = events.filter((_, i) => i < 6)
+function fmtTime(d) {
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+}
+
+function mapApiCalendarToView(evt) {
+  const start = evt.start?.dateTime ? new Date(evt.start.dateTime) : null
+  const end = evt.end?.dateTime ? new Date(evt.end.dateTime) : null
+  let time = 'All day'
+  if (!evt.isAllDay && start && end) time = `${fmtTime(start)} – ${fmtTime(end)}`
+  return {
+    id: evt.id,
+    title: evt.subject || '(No title)',
+    time,
+    date: formatEventDate(evt.start?.dateTime),
+    startRaw: evt.start?.dateTime || null,
+  }
+}
+
+function mapDemoCalendarToView(evt) {
+  const start = evt.start ? new Date(evt.start) : null
+  const end = evt.end ? new Date(evt.end) : null
+  let time = 'All day'
+  if (!evt.isAllDay && start && end) time = `${fmtTime(start)} – ${fmtTime(end)}`
+  return {
+    id: evt.id,
+    title: evt.title || '(No title)',
+    time,
+    date: formatEventDate(evt.start),
+    startRaw: evt.start || null,
+  }
+}
+
+function extractUserDataCalendar(userData) {
+  const entries = userData?.calendar || []
+  const events = []
+  for (const entry of entries) {
+    for (const evt of (entry.data?.calendarEvents || [])) {
+      events.push(mapDemoCalendarToView(evt))
+    }
+  }
+  events.sort((a, b) => new Date(a.startRaw || 0) - new Date(b.startRaw || 0))
+  return events
+}
+
+function CalendarCard({ events }) {
+  const upcoming = events.slice(0, 4)
 
   return (
     <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl shadow-sm border border-white/[0.08] overflow-hidden w-full animate-fade-in">
@@ -840,6 +888,48 @@ export default function DashboardPage() {
     fetchInbox()
     return () => { cancelled = true }
   }, [outlookUserId])
+
+  // Calendar fetch
+  const [calendarEvents, setCalendarEvents] = useState([])
+  const [calendarError, setCalendarError] = useState(false)
+
+  useEffect(() => {
+    if (demoMode) {
+      setCalendarEvents(extractUserDataCalendar(userData).slice(0, 4))
+      return
+    }
+    if (!outlookUserId) return
+
+    let cancelled = false
+
+    async function fetchCalendar() {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/calendar/events?top=10&orderBy=start/dateTime`,
+          {
+            credentials: 'include',
+            headers: { 'X-Outlook-User-Id': outlookUserId },
+          },
+        )
+        if (!res.ok) throw new Error('Calendar fetch failed')
+        const data = await res.json()
+        if (!cancelled) {
+          const upcoming = (data.events || [])
+            .map(mapApiCalendarToView)
+            .filter((e) => e.date)
+            .slice(0, 4)
+          setCalendarEvents(upcoming)
+          setCalendarError(false)
+        }
+      } catch (err) {
+        console.error('Calendar fetch error:', err)
+        if (!cancelled) setCalendarError(true)
+      }
+    }
+
+    fetchCalendar()
+    return () => { cancelled = true }
+  }, [outlookUserId, demoMode, userData])
 
   const startCall = async () => {
     setStatus(STATUS.CONNECTING)
@@ -1255,14 +1345,18 @@ export default function DashboardPage() {
             {hasEmailData ? (
               <div className="space-y-3">
                 <EmailInbox emails={inboxEmails} loading={emailsLoading} error={emailsError} />
-                <CalendarCard />
-                <button
-                  onClick={disconnectOutlook}
-                  disabled={emailConnectLoading}
-                  className="w-full px-4 py-2 rounded-xl border border-white/[0.08] text-[11px] font-medium text-gray-300 bg-white/[0.03] hover:bg-white/[0.06] disabled:opacity-50 transition-colors"
-                >
-                  Disconnect Outlook
-                </button>
+                {!calendarError && calendarEvents.length > 0 && (
+                  <CalendarCard events={calendarEvents} />
+                )}
+                {!demoMode && (
+                  <button
+                    onClick={disconnectOutlook}
+                    disabled={emailConnectLoading}
+                    className="w-full px-4 py-2 rounded-xl border border-white/[0.08] text-[11px] font-medium text-gray-300 bg-white/[0.03] hover:bg-white/[0.06] disabled:opacity-50 transition-colors"
+                  >
+                    Disconnect Outlook
+                  </button>
+                )}
               </div>
             ) : (
               <div
@@ -1278,12 +1372,12 @@ export default function DashboardPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-white text-sm font-semibold">Email Inbox</p>
+                      <p className="text-white text-sm font-semibold">Email & Calendar</p>
                       <p className="text-gray-500 text-[10px]">{emailConnectLoading ? 'Connecting…' : 'Not connected'}</p>
                     </div>
                   </div>
                   <p className="text-gray-400 text-xs leading-relaxed">
-                    Connect your Outlook inbox so Mimi can help you read, draft, and manage your emails.
+                    Connect your Outlook inbox so Mimi can help you read your emails and see your calendar.
                   </p>
                 </div>
                 <div className="px-6 py-3 flex justify-center">

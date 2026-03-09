@@ -532,13 +532,13 @@ export default function UploadPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold text-sm">Email Inbox</h3>
+                  <h3 className="text-white font-semibold text-sm">Email & Calendar</h3>
                   <p className="text-gray-500 text-[11px]">Microsoft Outlook</p>
                 </div>
               </div>
 
               <p className="text-gray-400 text-xs leading-relaxed mb-5">
-                Connect Outlook so Mimi can read your recent emails, help you draft replies, and keep track of important messages and reminders.
+                Connect Outlook so Mimi can read your recent emails, keep track of important messages and see your calendar.
               </p>
 
               <div className="flex-1 flex flex-col justify-end">

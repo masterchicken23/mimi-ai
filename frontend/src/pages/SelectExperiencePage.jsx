@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import demoFinancialRaw from '../demo/maya_financial.json'
 import demoEmailRaw from '../demo/maya_email.json'
+import demoCalendarRaw from '../demo/maya_calendar.json'
 
 function buildDemoUserData() {
   const accounts = demoFinancialRaw.override_accounts.map((acc) => {
@@ -29,6 +30,7 @@ function buildDemoUserData() {
   return {
     banking: [{ filename: 'maya-demo-banking', data: { accounts, transactions } }],
     email: [{ filename: 'maya-demo-email', data: demoEmailRaw }],
+    calendar: [{ filename: 'maya-demo-calendar', data: demoCalendarRaw }],
   }
 }
 
