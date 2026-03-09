@@ -1,0 +1,85 @@
+{
+  "calendarEvents": [
+    {
+      "id": "evt-1",
+      "title": "ICU Overnight Call",
+      "start": "2026-03-09T19:00:00-05:00",
+      "end": "2026-03-10T07:00:00-05:00",
+      "location": "UT Health Austin - ICU",
+      "description": "Overnight call shift. Review updated call schedule from Program Office for remainder of March.",
+      "isAllDay": false
+    },
+    {
+      "id": "evt-2",
+      "title": "Rounds with Dr. Klein",
+      "start": "2026-03-10T08:00:00-05:00",
+      "end": "2026-03-10T10:30:00-05:00",
+      "location": "Internal Medicine Wards",
+      "description": "Morning rounds. Follow-up on heart failure case and guideline discussion.",
+      "isAllDay": false
+    },
+    {
+      "id": "evt-3",
+      "title": "Trip to Houston - Family Dinner",
+      "start": "2026-03-14T18:00:00-06:00",
+      "end": "2026-03-16T09:00:00-05:00",
+      "location": "Houston (parents' home)",
+      "description": "Weekend at parents'. Mom cooking dal. Confirm Saturday night arrival and Monday morning return.",
+      "isAllDay": false
+    },
+    {
+      "id": "evt-4",
+      "title": "Restorative Yoga",
+      "start": "2026-03-14T19:00:00-05:00",
+      "end": "2026-03-14T20:00:00-05:00",
+      "location": "Downtown Yoga Studio",
+      "description": "Saturday evening restorative yoga. Doors open 15 min early. Bring water bottle.",
+      "isAllDay": false
+    },
+    {
+      "id": "evt-5",
+      "title": "ICU Weekend Coverage",
+      "start": "2026-03-15T07:00:00-05:00",
+      "end": "2026-03-15T19:00:00-05:00",
+      "location": "UT Health Austin - ICU",
+      "description": "Modified staffing weekend per updated March call schedule.",
+      "isAllDay": false
+    },
+    {
+      "id": "evt-6",
+      "title": "Student Loan Payment Due",
+      "start": "2026-03-15T00:00:00-05:00",
+      "end": "2026-03-15T23:59:59-05:00",
+      "location": null,
+      "description": "Federal student loan payment $420.17 scheduled. Ensure sufficient funds in designated account.",
+      "isAllDay": true
+    },
+    {
+      "id": "evt-7",
+      "title": "Coffee with Alex",
+      "start": "2026-03-16T14:00:00-05:00",
+      "end": "2026-03-16T15:00:00-05:00",
+      "location": "Riverside (new café near campus)",
+      "description": "Catch up with Alex if not in Houston. New place on Riverside.",
+      "isAllDay": false
+    },
+    {
+      "id": "evt-8",
+      "title": "ICU Weekend Coverage",
+      "start": "2026-03-21T07:00:00-05:00",
+      "end": "2026-03-21T19:00:00-05:00",
+      "location": "UT Health Austin - ICU",
+      "description": "Modified staffing weekend per updated March call schedule.",
+      "isAllDay": false
+    },
+    {
+      "id": "evt-9",
+      "title": "Sign-out / Handoff",
+      "start": "2026-03-09T18:00:00-05:00",
+      "end": "2026-03-09T18:30:00-05:00",
+      "location": "Resident workroom",
+      "description": "Evening sign-out before overnight call.",
+      "isAllDay": false
+    }
+  ]
+}
