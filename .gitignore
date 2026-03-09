@@ -40,3 +40,5 @@ venv/
 # Backend temp auth state (OAuth flow persistence)
 backend/.auth_flows/
 .auth_flows/
+backend/.token_cache/
+.token_cache/
