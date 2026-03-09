@@ -509,6 +509,18 @@ function fmtTime(d) {
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
+/** Format time as it appears in the JSON (no timezone conversion). ISO string e.g. "2026-03-09T19:00:00-05:00" -> "7:00 PM" */
+function fmtTimeFromIso(isoStr) {
+  if (!isoStr || typeof isoStr !== 'string') return ''
+  const m = isoStr.match(/T(\d{1,2}):(\d{2})/)
+  if (!m) return ''
+  const hour = parseInt(m[1], 10)
+  const minute = m[2]
+  const period = hour >= 12 ? 'PM' : 'AM'
+  const h12 = hour % 12 || 12
+  return `${h12}:${minute} ${period}`
+}
+
 function mapApiCalendarToView(evt) {
   const start = evt.start?.dateTime ? new Date(evt.start.dateTime) : null
   const end = evt.end?.dateTime ? new Date(evt.end.dateTime) : null
@@ -527,7 +539,10 @@ function mapDemoCalendarToView(evt) {
   const start = evt.start ? new Date(evt.start) : null
   const end = evt.end ? new Date(evt.end) : null
   let time = 'All day'
-  if (!evt.isAllDay && start && end) time = `${fmtTime(start)} – ${fmtTime(end)}`
+  // Use times as stored in JSON (no timezone conversion) so dashboard matches maya_calendar.json
+  if (!evt.isAllDay && evt.start && evt.end) {
+    time = `${fmtTimeFromIso(evt.start)} – ${fmtTimeFromIso(evt.end)}`
+  }
   return {
     id: evt.id,
     title: evt.title || '(No title)',
@@ -614,9 +629,21 @@ function buildContextString(userData) {
 
   for (const [category, items] of Object.entries(userData)) {
     const heading = labels[category] || category.toUpperCase()
-    const content = items
-      .map((item) => JSON.stringify(item.data, null, 0))
-      .join('\n')
+    let content
+    if (category === 'calendar') {
+      // Merge all calendar events and sort chronologically so the assistant sees "next" events in order
+      const allEvents = []
+      for (const item of items) {
+        const events = item.data?.calendarEvents || []
+        allEvents.push(...events)
+      }
+      allEvents.sort((a, b) => new Date(a.start || 0) - new Date(b.start || 0))
+      content = JSON.stringify({ calendarEvents: allEvents }, null, 0)
+    } else {
+      content = items
+        .map((item) => JSON.stringify(item.data, null, 0))
+        .join('\n')
+    }
     sections.push(`--- ${heading} ---\n${content}`)
   }
 
