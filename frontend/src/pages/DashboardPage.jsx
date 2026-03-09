@@ -27,6 +27,7 @@ function buildContextString(userData) {
     conversations: 'CONVERSATION HISTORY',
     search: 'INTERNET SEARCH HISTORY',
     banking: 'BANK TRANSACTIONS',
+    email: 'RECENT EMAILS',
     calendar: 'CALENDAR & EVENTS',
     other: 'OTHER DATA',
   }

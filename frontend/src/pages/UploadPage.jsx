@@ -127,6 +127,27 @@ function PlaidLinkButton({ onSuccess, onConnecting }) {
 function OutlookConnectButton({ onSuccess, onConnecting }) {
   const [loading, setLoading] = useState(false)
 
+  const fetchRecentEmails = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/email/messages?top=5`, {
+        credentials: 'include',
+      })
+      if (!res.ok) return []
+      const data = await res.json()
+      return (data.messages || []).map((m) => ({
+        subject: m.subject,
+        from: m.from?.emailAddress?.address || '',
+        fromName: m.from?.emailAddress?.name || '',
+        preview: m.bodyPreview,
+        receivedAt: m.receivedAt,
+        isRead: m.isRead,
+      }))
+    } catch (err) {
+      console.error('Failed to fetch recent emails:', err)
+      return []
+    }
+  }
+
   const checkOutlookStatus = async () => {
     try {
       const res = await fetch(`${API_BASE}/auth/outlook/status`, {
@@ -134,10 +155,12 @@ function OutlookConnectButton({ onSuccess, onConnecting }) {
       })
       const data = await res.json()
       if (data.authenticated) {
+        const recentEmails = await fetchRecentEmails()
         onSuccess({
           displayName: data.displayName,
           email: data.email,
           userId: data.userId,
+          recentEmails,
         })
         return true
       }
@@ -298,8 +321,11 @@ export default function UploadPage() {
     if (outlookData) {
       if (!userData.email) userData.email = []
       userData.email.push({
-        filename: 'outlook-email-connection',
-        data: outlookData,
+        filename: 'outlook-recent-emails',
+        data: {
+          account: { displayName: outlookData.displayName, email: outlookData.email },
+          recentEmails: outlookData.recentEmails || [],
+        },
       })
     }
 
@@ -466,7 +492,7 @@ export default function UploadPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-blue-900">Email Connected</p>
                 <p className="text-xs text-blue-600 mt-0.5">
-                  {outlookData.displayName || outlookData.email} — Outlook
+                  {outlookData.displayName || outlookData.email} · {outlookData.recentEmails?.length || 0} recent email{(outlookData.recentEmails?.length || 0) !== 1 ? 's' : ''} loaded
                 </p>
               </div>
               <button
