@@ -6,33 +6,61 @@ Mimi AI is a voice-first companion designed for people living with Parkinson's. 
 
 ### How to run the demo
 
-If the project is distributed **with `backend/.env` and `frontend/.env` already configured**, run the app immediately—no need to create accounts or obtain keys.
+If the project is distributed **with `backend/.env` and `frontend/.env` already configured**, you can run the app right away with no need to create your own API accounts or keys.
 
-**Prerequisites:** Node.js v20+ and npm v10+.
+**What you need:** Node.js v20+ and npm v10+ on your machine.
 
-1. **Start the backend** (from the project root):
-   ```bash
-   cd backend
-   npm install
-   npm run dev
-   ```
-   Leave this terminal open. The backend runs at **http://localhost:8080**.
+---
 
-2. **Start the frontend** (in a second terminal):
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-   The frontend runs at **http://localhost:5173**.
+#### Step 1: Start the backend
 
-3. **Open the app** at `http://localhost:5173` in your browser.
+Open a terminal and, from the **project root** (the `mimi-ai` folder), run:
 
-4. **Use the demo** in one of two ways:
-   - **Option A – Demo persona (no login):** Choose **Maya Patel** from the intro flow. No Plaid or Outlook sign-in required. Mimi uses the bundled fictional data (emails, transactions, calendar). Try asking e.g. "What's my next calendar appointment?"
-   - **Option B – Connect Plaid and Outlook:** Click to connect Plaid and use the **fictional** Sandbox credentials: **Username** `user_good`, **Password** `pass_good` (bank: choose any). Then connect Outlook and sign in with a Microsoft account. Mimi will use that account's email and calendar plus the Plaid sandbox data.
+```bash
+cd backend
+npm install
+npm run dev
+```
 
-Allow microphone access when you start a voice session. That's the full demo.
+Leave this terminal open. When it’s ready, you’ll see the backend listening at **http://localhost:8080**. The server will stay running until you stop it (e.g. Ctrl+C).
+
+---
+
+#### Step 2: Start the frontend
+
+Open a **second** terminal. From the project root, run:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+When it’s ready, the frontend will be available at **http://localhost:5173**. Keep this terminal open as well.
+
+---
+
+#### Step 3: Open the app and use the demo
+
+1. In your browser, go to **http://localhost:5173**.
+
+2. On the welcome screen, choose how you want to run the demo:
+
+   **Option A – Demo persona (no login)**
+   - Select **Maya Patel** from the intro flow.
+   - No Plaid or Outlook sign-in required.
+   - Mimi uses bundled fictional data (emails, transactions, calendar).
+   - Example: ask *"What's my next calendar appointment?"*
+
+   **Option B – Connect Plaid and Outlook**
+   - **Plaid:** Click to connect, then use the **fictional** Sandbox credentials:
+     - **Username:** `user_good`
+     - **Password:** `pass_good`
+     - **Bank:** choose any
+   - **Outlook:** Connect and sign in with your Microsoft account.
+   - Mimi will use that account's email and calendar plus the Plaid sandbox data.
+
+3. When you start a voice session, **allow microphone access** in the browser.
 
 ---
 
