@@ -6,15 +6,60 @@ Mimi AI is a voice-first companion designed for people living with Parkinson's. 
 
 ### How to run the demo
 
-If the project is distributed **with `backend/.env` and `frontend/.env` already configured**, you can run the app right away with no need to create your own API accounts or keys.
+You will **clone the repo, configure your own `.env` files, and then choose between the demo persona or a live Sandbox experience**.
 
-**What you need:** Node.js v20+ and npm v10+ on your machine.
+#### Prerequisites
+
+- **Node.js**: v20+  
+- **npm**: v10+  
+- A **Plaid Sandbox** account (for bank data)  
+- A **Microsoft account** (for Outlook / Microsoft Graph)  
+- A **Vapi** account + public key (for the voice assistant)
+
+The sections **Environment variables and API keys** below explain which keys you need from each provider.
 
 ---
 
-#### Step 1: Start the backend
+#### Step 1: Clone the repo
 
-Open a terminal and, from the **project root** (the `mimi-ai` folder), run:
+```bash
+git clone <YOUR_REPO_URL> mimi-ai
+cd mimi-ai
+```
+
+---
+
+#### Step 2: Configure environment variables
+
+1. **Backend (`backend/.env`)**
+   - From the project root:
+     ```bash
+     cd backend
+     cp .env.example .env   # or copy .env.example .env on Windows
+     ```
+   - Edit `backend/.env` and fill in:
+     - Core app settings (`PORT`, `FRONTEND_ORIGIN`, `BACKEND_ORIGIN`, `SECRET_KEY`, `SESSION_SECRET`)  
+     - Plaid Sandbox keys (`PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=sandbox`)  
+     - Outlook / Microsoft Graph keys (`MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `MS_TENANT_ID`)  
+   - See **Environment variables and API keys** for exact values and where to get them.
+
+2. **Frontend (`frontend/.env`)**
+   - From the project root:
+     ```bash
+     cd frontend
+     ```
+   - Create a file `frontend/.env`:
+     ```bash
+     VITE_API_BASE=http://localhost:8080
+     VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
+     ```
+   - `VITE_VAPI_PUBLIC_KEY` comes from your Vapi project (see the Vapi section below).
+
+---
+
+#### Step 3: Start the backend
+
+From the project root:
 
 ```bash
 cd backend
@@ -26,9 +71,9 @@ Leave this terminal open. When it’s ready, you’ll see the backend listening 
 
 ---
 
-#### Step 2: Start the frontend
+#### Step 4: Start the frontend
 
-Open a **second** terminal. From the project root, run:
+Open a **second** terminal. From the project root:
 
 ```bash
 cd frontend
@@ -40,40 +85,28 @@ When it’s ready, the frontend will be available at **http://localhost:5173**. 
 
 ---
 
-#### Step 3: Open the app and use the demo
+#### Step 5: Open the app and choose your experience
 
-1. In your browser, go to **http://localhost:5173**.
+1. In your browser, go to **http://localhost:5173**.  
+2. On the welcome screen, choose how you want to explore Mimi:
 
-2. On the welcome screen, choose how you want to run the demo:
+   **Option A – Demo persona (no login)**  
+   - Select **Maya Patel** from the intro flow.  
+   - No Plaid or Outlook sign-in required.  
+   - Mimi uses bundled fictional data (emails, transactions, calendar).  
+   - Example voice prompt: *"What's my next calendar appointment?"*
 
-   **Option A – Demo persona (no login)**
-   - Select **Maya Patel** from the intro flow.
-   - No Plaid or Outlook sign-in required.
-   - Mimi uses bundled fictional data (emails, transactions, calendar).
-   - Example: ask *"What's my next calendar appointment?"*
-
-   **Option B – Connect Plaid and Outlook**
-   - **Plaid:** Click to connect, then use the **fictional** Sandbox credentials:
-     - **Username:** `user_good`
-     - **Password:** `pass_good`
-     - **Bank:** choose any
-   - **Outlook:** Connect and sign in with your Microsoft account.
+   **Option B – Connect Plaid and Outlook (Sandbox)**  
+   - **Plaid:** Click to connect, then use the **fictional** Sandbox credentials in the Plaid Link UI:  
+     - **Username:** `user_good`  
+     - **Password:** `pass_good`  
+     - **Bank:** choose any  
+   - **Outlook:** Connect and sign in with your Microsoft account.  
    - Mimi will use that account's email and calendar plus the Plaid sandbox data.
 
-3. When you start a voice session, **allow microphone access** in the browser.
+3. When you start a voice session, **allow microphone access** in the browser so Mimi can hear you.
 
----
-
-### Quick start (when .env is not included)
-
-If you don't have the preconfigured `.env` files (e.g. you cloned the public repo), create `backend/.env` and `frontend/.env` and fill in your own keys. See **Environment variables and API keys** below for what each variable is and how to obtain Plaid, Microsoft, and Vapi credentials.
-
-**Prerequisites:** Node.js v20+, npm v10+, and (for connecting Outlook in the app) a Microsoft account. For Plaid you still use the fictional Sandbox credentials (`user_good` / `pass_good`); the backend needs your Plaid Sandbox app keys in `.env`.
-
-1. **Clone** (if needed): `git clone <REPO_URL> mimi-ai && cd mimi-ai`
-2. **Backend:** Copy `backend/.env.example` to `backend/.env`, fill in all variables, then `cd backend && npm install && npm run dev`.
-3. **Frontend:** Create `frontend/.env` with `VITE_API_BASE=http://localhost:8080` and `VITE_VAPI_PUBLIC_KEY=...`, then `cd frontend && npm install && npm run dev`.
-4. Open **http://localhost:5173** and use the app as described in **How to run the demo** (Maya persona or connect Plaid + Outlook).
+That’s the full demo running from a fresh clone.
 
 ---
 
@@ -128,7 +161,7 @@ If you don't have the preconfigured `.env` files (e.g. you cloned the public rep
 
 ### Environment variables and API keys
 
-Only needed when the project does **not** come with preconfigured `.env` files (e.g. you cloned the repo and need to add your own keys). Run the app as in **How to run the demo** after filling these in.
+Use this section when filling out `backend/.env` and `frontend/.env` in **Step 2: Configure environment variables** above.
 
 #### **Backend and frontend `.env`**
 
@@ -189,7 +222,7 @@ Redirect URI in Azure must be: `http://localhost:8080/auth/outlook/callback`. Do
    - `PLAID_CLIENT_ID`  
    - `PLAID_SECRET`  
 3. Put them in backend `.env`.  
-4. In the UI, use the **Plaid Link** flow to link a **fictional** test bank. You must use these Sandbox credentials (no real bank account):
+4. In the UI, use the **Plaid Link** flow in the app to link a **fictional** test bank. You must use these Sandbox credentials (no real bank account):
 
    | Field    | Value       |
    |----------|-------------|
@@ -206,10 +239,6 @@ Redirect URI in Azure must be: `http://localhost:8080/auth/outlook/callback`. Do
 3. Copy your **Public Key** and set it in `frontend/.env` as:
    - `VITE_VAPI_PUBLIC_KEY=...`  
 4. Rebuild / restart the frontend so the env var is picked up.  
-
----
-
-**Run the app:** Start backend and frontend, then open the app as in **How to run the demo** above.
 
 ---
 
