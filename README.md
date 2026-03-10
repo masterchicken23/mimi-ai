@@ -4,9 +4,14 @@ Mimi AI is a voice-first companion designed for people living with Parkinson's. 
 
 ---
 
+## Live deployment: tbd .com
+
+
 ### How to run the demo
 
 You will **clone the repo, configure your own `.env` files, and then choose between the demo persona or a live Sandbox experience**.
+
+!!!! For local deployment, choose DEMO track when selecting your experience !!!!
 
 #### Prerequisites
 
