@@ -2,142 +2,50 @@
 
 Mimi AI is a voice-first companion designed for people living with Parkinson's. It connects to your bank (via Plaid), your email, and your calendar (via Microsoft Outlook / Graph), then surfaces an AI “Mimi” persona that can talk you through your finances, calendar, recent activity, and next steps so you can stay on top of things by speaking, not typing or tapping.
 
-### Quick start
+---
 
-#### **Prerequisites**
+### How to run the demo
 
-- **Node.js**: v20+ (recommended)  
-- **npm**: v10+  
-- **Python** (optional, only if you also want to run the FastAPI backend prototype): 3.10+  
-- A **Microsoft account** (for Outlook / Microsoft Graph delegated login)  
-- A **Plaid Sandbox** account (bank connection is fictional; use test credentials `user_good` / `pass_good` when linking)  
-- A **Vapi** account + public key (for the voice assistant)
+If the project is distributed **with `backend/.env` and `frontend/.env` already configured**, run the app immediately—no need to create accounts or obtain keys.
+
+**Prerequisites:** Node.js v20+ and npm v10+.
+
+1. **Start the backend** (from the project root):
+   ```bash
+   cd backend
+   npm install
+   npm run dev
+   ```
+   Leave this terminal open. The backend runs at **http://localhost:8080**.
+
+2. **Start the frontend** (in a second terminal):
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   The frontend runs at **http://localhost:5173**.
+
+3. **Open the app** at `http://localhost:5173` in your browser.
+
+4. **Use the demo** in one of two ways:
+   - **Option A – Demo persona (no login):** Choose **Maya Patel** from the intro flow. No Plaid or Outlook sign-in required. Mimi uses the bundled fictional data (emails, transactions, calendar). Try asking e.g. "What's my next calendar appointment?"
+   - **Option B – Connect Plaid and Outlook:** Click to connect Plaid and use the **fictional** Sandbox credentials: **Username** `user_good`, **Password** `pass_good` (bank: choose any). Then connect Outlook and sign in with a Microsoft account. Mimi will use that account's email and calendar plus the Plaid sandbox data.
+
+Allow microphone access when you start a voice session. That's the full demo.
 
 ---
 
-#### **1. Clone the repo**
+### Quick start (when .env is not included)
 
-```bash
-git clone <YOUR_REPO_URL> mimi-ai
-cd mimi-ai
-```
+If you don't have the preconfigured `.env` files (e.g. you cloned the public repo), create `backend/.env` and `frontend/.env` and fill in your own keys. See **Environment variables and API keys** below for what each variable is and how to obtain Plaid, Microsoft, and Vapi credentials.
 
----
+**Prerequisites:** Node.js v20+, npm v10+, and (for connecting Outlook in the app) a Microsoft account. For Plaid you still use the fictional Sandbox credentials (`user_good` / `pass_good`); the backend needs your Plaid Sandbox app keys in `.env`.
 
-#### **2. Configure backend environment**
-
-From the repo root:
-
-```bash
-cd backend
-
-# Create your .env from the example
-cp .env.example .env  # On Windows PowerShell: copy .env.example .env
-```
-
-Edit `.env` and fill in:
-
-- **Core app**
-  - `PORT=8080` (default, can keep)
-  - `FRONTEND_ORIGIN=http://localhost:5173`
-  - `BACKEND_ORIGIN=http://localhost:8080`
-  - `SECRET_KEY` – set to a random long string
-  - `SESSION_SECRET` – set to a random long string
-
-- **Plaid (Sandbox)**
-  - `PLAID_CLIENT_ID=your_plaid_client_id`
-  - `PLAID_SECRET=your_plaid_sandbox_secret`
-  - `PLAID_ENV=sandbox`
-
-- **Outlook / Microsoft Graph**
-  - `MS_CLIENT_ID=your-outlook-app-client-id`
-  - `MS_CLIENT_SECRET=your-outlook-client-secret-value`
-  - `MS_TENANT_ID=consumers` (works for consumer accounts; update if you use an org tenant)
-
-> The redirect URI must be set in Azure to:  
-> `http://localhost:8080/auth/outlook/callback`
-
----
-
-#### **3. Install and run the Node backend**
-
-From `backend/`:
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-- The backend will start on **http://localhost:8080**.
-- It exposes:
-  - `/api/plaid/*` for Plaid integration
-  - `/auth/outlook/*` for Microsoft login
-  - `/api/email/*` for Outlook email operations
-  - `/api/calendar/*` for Outlook calendar events
-  - `/health` for health checks
-
-Keep this terminal window running.
-
----
-
-#### **4. Configure the frontend**
-
-From the repo root:
-
-```bash
-cd frontend
-```
-
-Create a `.env` file:
-
-```bash
-# frontend/.env
-VITE_API_BASE=http://localhost:8080
-VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
-```
-
-- `VITE_API_BASE` must point to the backend origin (by default `http://localhost:8080`).
-- `VITE_VAPI_PUBLIC_KEY` comes from your Vapi project.
-
----
-
-#### **5. Install and run the frontend**
-
-Still in `frontend/`:
-
-```bash
-npm install
-npm run dev
-```
-
-- The frontend runs on **http://localhost:5173**.
-
----
-
-#### **6. Use the app**
-
-1. Open `http://localhost:5173` in your browser.  
-2. **Connect Plaid**:
-   - Click the Plaid connect flow.  
-   - The linked "bank" is **fictional** (Plaid Sandbox). You **must** use the test credentials below—no real bank account is used.
-   - **Credentials:**  
-     - **Bank:** choose any (institution choice does not matter).  
-     - **Username:** `user_good`  
-     - **Password:** `pass_good`  
-3. **Connect Outlook**:
-   - Click the Outlook connect / login button.  
-   - You’ll be redirected to Microsoft’s login and consent screen.  
-   - Approve the requested scopes (`User.Read`, `Mail.ReadWrite`, `Mail.Send`, `Calendars.Read`).  
-4. **Start talking to Mimi**:
-   - Allow mic permissions in the browser when prompted.  
-   - Use the voice controls on the dashboard to start a conversation.  
-   - Mimi will use:
-     - Plaid data (transactions, balances)  
-     - Outlook email and calendar  
-     - Synthetic persona data from the backend `personas/` directory  
-
-At this point you have a fully working local demo: Plaid + Outlook (email and calendar) + voice assistant over your test data.
+1. **Clone** (if needed): `git clone <REPO_URL> mimi-ai && cd mimi-ai`
+2. **Backend:** Copy `backend/.env.example` to `backend/.env`, fill in all variables, then `cd backend && npm install && npm run dev`.
+3. **Frontend:** Create `frontend/.env` with `VITE_API_BASE=http://localhost:8080` and `VITE_VAPI_PUBLIC_KEY=...`, then `cd frontend && npm install && npm run dev`.
+4. Open **http://localhost:5173** and use the app as described in **How to run the demo** (Maya persona or connect Plaid + Outlook).
 
 ---
 
@@ -190,11 +98,13 @@ At this point you have a fully working local demo: Plaid + Outlook (email and ca
 
 ---
 
-### How to reproduce the demo
+### Environment variables and API keys
 
-#### **1. Environment variables**
+Only needed when the project does **not** come with preconfigured `.env` files (e.g. you cloned the repo and need to add your own keys). Run the app as in **How to run the demo** after filling these in.
 
-##### Backend `.env` (based on `.env.example`)
+#### **Backend and frontend `.env`**
+
+##### Backend `backend/.env` (use `backend/.env.example` as template)
 
 ```bash
 # App
@@ -222,11 +132,11 @@ VITE_API_BASE=http://localhost:8080
 VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 ```
 
-> Do **not** commit real secrets; use a local `.env` and share a redacted `.env.example` (like the existing backend one).
+Redirect URI in Azure must be: `http://localhost:8080/auth/outlook/callback`. Do **not** commit real secrets.
 
 ---
 
-#### **2. Azure / Outlook setup**
+#### **Azure / Outlook (Microsoft Graph)**
 
 1. Go to **Azure Portal → Microsoft Entra ID → App registrations → New registration**.  
 2. Set a **Redirect URI (Web)** to:
@@ -244,7 +154,7 @@ VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 
 ---
 
-#### **3. Plaid sandbox setup**
+#### **Plaid Sandbox**
 
 1. Create a **Plaid Sandbox** account.  
 2. Create a new **Sandbox application** and retrieve:
@@ -261,7 +171,7 @@ VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 
 ---
 
-#### **4. Vapi setup**
+#### **Vapi**
 
 1. Create a project in the **Vapi** dashboard.  
 2. Configure an assistant (the `ASSISTANT_ID` is hard-coded in the frontend).  
@@ -271,23 +181,7 @@ VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 
 ---
 
-#### **5. Run end-to-end**
-
-1. **Start backend**: `npm run dev` in `backend/`.  
-2. **Start frontend**: `npm run dev` in `frontend/`.  
-3. Visit `http://localhost:5173` and:
-
-    **Option A – Use the built-in demo persona (no login)**  
-     - Choose the included demo persona **“Maya Patel”** from the intro/upload flow.  
-     - This uses the bundled persona data and demo emails, transactions, and calendar (e.g. `maya_calendar.json`), so you don’t need to connect Plaid or sign into Outlook.  
-     - Start a voice session with Mimi speaking as Maya, using only the local demo data. You can ask things like "What's my next calendar appointment?"
-   - **Option B – Use your own test accounts**  
-     - Complete Plaid link using the fictional Sandbox credentials (Username: `user_good`, Password: `pass_good`; bank: choose any).  
-     - Log into Outlook via the app with your Microsoft account.  
-     - Start a voice session with Mimi over your own data and plaid sandbox.  
-   - 
-
-This reproduces the complete hackathon demo locally.
+**Run the app:** Start backend and frontend, then open the app as in **How to run the demo** above.
 
 ---
 
