@@ -98,7 +98,7 @@ When it’s ready, the frontend will be available at **http://localhost:5173**. 
 
    **Option B – Connect Plaid and Outlook (Sandbox)**  
    - **Plaid:** Click to connect, then use the **fictional** Sandbox credentials in the Plaid Link UI:  
-     - **Username:** `user_good`  
+     - **Username:** `user_rodrigo`  
      - **Password:** `pass_good`  
      - **Bank:** choose any  
    - **Outlook:** Connect and sign in with your Microsoft account.  
@@ -227,7 +227,7 @@ Redirect URI in Azure must be: `http://localhost:8080/auth/outlook/callback`. Do
    | Field    | Value       |
    |----------|-------------|
    | Bank     | Choose any  |
-   | Username | `user_good` |
+   | Username | `user_rodrigo` |
    | Password | `pass_good` |  
 
 ---
