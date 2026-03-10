@@ -1,6 +1,6 @@
 ## Mimi AI
 
-Mimi AI is a voice-first financial companion that connects to your bank (via Plaid) and your email (via Microsoft Outlook / Graph), then surfaces an AI “Mimi” persona that can talk you through your finances, recent activity, and next steps.
+Mimi AI is a voice-first financial companion designed for people living with Parkinson's. It connects to your bank (via Plaid), your email, and your calendar (via Microsoft Outlook / Graph), then surfaces an AI “Mimi” persona that can talk you through your finances, calendar, recent activity, and next steps so you can stay on top of things by speaking, not typing or tapping.
 
 ### Quick start
 
@@ -10,7 +10,7 @@ Mimi AI is a voice-first financial companion that connects to your bank (via Pla
 - **npm**: v10+  
 - **Python** (optional, only if you also want to run the FastAPI backend prototype): 3.10+  
 - A **Microsoft account** (for Outlook / Microsoft Graph delegated login)  
-- A **Plaid Sandbox** account  
+- A **Plaid Sandbox** account (bank connection is fictional; use test credentials `user_good` / `pass_good` when linking)  
 - A **Vapi** account + public key (for the voice assistant)
 
 ---
@@ -74,6 +74,7 @@ npm run dev
   - `/api/plaid/*` for Plaid integration
   - `/auth/outlook/*` for Microsoft login
   - `/api/email/*` for Outlook email operations
+  - `/api/calendar/*` for Outlook calendar events
   - `/health` for health checks
 
 Keep this terminal window running.
@@ -119,20 +120,24 @@ npm run dev
 1. Open `http://localhost:5173` in your browser.  
 2. **Connect Plaid**:
    - Click the Plaid connect flow.  
-   - Use **Plaid Sandbox** credentials to link a test bank account.  
+   - The linked "bank" is **fictional** (Plaid Sandbox). You **must** use the test credentials below—no real bank account is used.
+   - **Credentials:**  
+     - **Bank:** choose any (institution choice does not matter).  
+     - **Username:** `user_good`  
+     - **Password:** `pass_good`  
 3. **Connect Outlook**:
    - Click the Outlook connect / login button.  
    - You’ll be redirected to Microsoft’s login and consent screen.  
-   - Approve the requested scopes (`User.Read`, `Mail.ReadWrite`, `Mail.Send`).  
+   - Approve the requested scopes (`User.Read`, `Mail.ReadWrite`, `Mail.Send`, `Calendars.Read`).  
 4. **Start talking to Mimi**:
    - Allow mic permissions in the browser when prompted.  
    - Use the voice controls on the dashboard to start a conversation.  
    - Mimi will use:
      - Plaid data (transactions, balances)  
-     - Outlook email context  
+     - Outlook email and calendar  
      - Synthetic persona data from the backend `personas/` directory  
 
-At this point you have a fully working local demo: Plaid + Outlook + voice assistant over your test data.
+At this point you have a fully working local demo: Plaid + Outlook (email and calendar) + voice assistant over your test data.
 
 ---
 
@@ -167,7 +172,7 @@ At this point you have a fully working local demo: Plaid + Outlook + voice assis
         |
         |--- Plaid API (sandbox)
         |
-        |--- Microsoft Graph API (Outlook / Mail)
+        |--- Microsoft Graph API (Outlook / Mail + Calendar)
         |
         |--- Local persona dataset (backend/personas/*)
 ```
@@ -176,6 +181,7 @@ At this point you have a fully working local demo: Plaid + Outlook + voice assis
   - `/api/plaid/*` (link token, public token exchange, transaction data)
   - `/auth/outlook/*` (login, callback, status)
   - `/api/email/*` (list messages, send email, etc.)
+  - `/api/calendar/*` (list calendar events from Outlook)
 - The **backend**:
   - Stores short-lived session data in server memory / filesystem (`.token_cache`).
   - Manages MSAL auth code flow for Outlook.
@@ -229,6 +235,7 @@ VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
    - `User.Read`  
    - `Mail.ReadWrite`  
    - `Mail.Send`  
+   - `Calendars.Read`  
 4. Under **Certificates & secrets**, create a **Client secret**.  
 5. Copy values into backend `.env`:
    - `MS_CLIENT_ID`  
@@ -244,7 +251,13 @@ VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
    - `PLAID_CLIENT_ID`  
    - `PLAID_SECRET`  
 3. Put them in backend `.env`.  
-4. In the UI, use the **Plaid Link** flow and choose any of the sandbox institutions / credentials provided by Plaid.  
+4. In the UI, use the **Plaid Link** flow to link a **fictional** test bank. You must use these Sandbox credentials (no real bank account):
+
+   | Field    | Value       |
+   |----------|-------------|
+   | Bank     | Choose any  |
+   | Username | `user_good` |
+   | Password | `pass_good` |  
 
 ---
 
@@ -263,41 +276,28 @@ VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 1. **Start backend**: `npm run dev` in `backend/`.  
 2. **Start frontend**: `npm run dev` in `frontend/`.  
 3. Visit `http://localhost:5173` and:
-   - **Option A – Use your own test accounts**  
-     - Complete Plaid link with a Plaid Sandbox institution.  
-     - Log into Outlook via the app with your Microsoft account.  
-     - Start a voice session with Mimi over your own (test) data.  
-   - **Option B – Use the built-in demo persona (no login)**  
+
+    **Option A – Use the built-in demo persona (no login)**  
      - Choose the included demo persona **“Maya Patel”** from the intro/upload flow.  
-     - This uses the bundled persona data and demo emails/transactions, so you don’t need to connect Plaid or sign into Outlook.  
-     - Start a voice session with Mimi speaking as/with Maya, using only the local demo data.  
+     - This uses the bundled persona data and demo emails, transactions, and calendar (e.g. `maya_calendar.json`), so you don’t need to connect Plaid or sign into Outlook.  
+     - Start a voice session with Mimi speaking as Maya, using only the local demo data. You can ask things like "What's my next calendar appointment?"
+   - **Option B – Use your own test accounts**  
+     - Complete Plaid link using the fictional Sandbox credentials (Username: `user_good`, Password: `pass_good`; bank: choose any).  
+     - Log into Outlook via the app with your Microsoft account.  
+     - Start a voice session with Mimi over your own data and plaid sandbox.  
+   - 
 
 This reproduces the complete hackathon demo locally.
 
 ---
 
-### Datasets used and their source
+### Demo persona and data
 
-The project uses **synthetic persona datasets** checked into the repo under `backend/personas/`:
+The persona used in the demo (e.g. **Maya Patel**) is **purely fictional**. It was created for this hackathon to showcase Mimi’s voice-first experience without requiring real bank or email connections.
 
-- **Structure (per persona)**:
-  - `persona_profile.json` – high-level profile and traits.  
-  - `emails.jsonl` – synthetic email messages.  
-  - `transactions.jsonl` – synthetic financial transactions.  
-  - `lifelog.jsonl` – time-series life events.  
-  - `social_posts.jsonl` – synthetic social media activity.  
-  - `calendar.jsonl` – synthetic calendar events.  
-  - `files_index.jsonl` – references to hypothetical files.  
-  - `consent.json` – consent metadata for the persona.  
-  - `README.md` – persona-specific notes.  
-
-**Source & privacy notes:**
-
-- All persona data is **synthetic**, created partly by the project team for this hackathon and partly provided by the hackathon organizers specifically for this use case.  
-- No real user data, PII, or production account data is included in the repo.  
-- Live data only comes from:
-  - **Plaid Sandbox** accounts (test-only).  
-  - Your own **Outlook** account via Microsoft Graph, used locally and stored in a local token cache.  
+- **Purpose:** Demonstrate the product with realistic but fake data (emails, transactions, calendar, profile). No real people or accounts are represented.
+- **Content:** Profile, emails, transactions, calendar events, and related files live under `backend/personas/` and `frontend/src/demo/` (e.g. `maya_calendar.json`, `maya_email.json`, `maya_financial.json`). All of it is invented for the demo.
+- **Privacy:** The repo contains no real user data or PII. When you use your own accounts, Plaid and Outlook data stays in your session and (for Outlook) in a local token cache; it is not stored in the repo or in any dataset.
 
 ---
 
@@ -311,9 +311,9 @@ The project uses **synthetic persona datasets** checked into the repo under `bac
   - Integration is currently sandbox-only.  
   - No production Plaid environments or webhook handling are wired up.  
 
-- **Outlook-only email provider**
-  - Gmail or other providers are not integrated.  
-  - The abstraction exists but only Outlook / Microsoft Graph is implemented.  
+- **Outlook-only email and calendar**
+  - Gmail, Google Calendar, and other providers are not integrated.  
+  - The abstraction exists but only Outlook / Microsoft Graph (Mail + Calendar) is implemented.  
 
 - **Basic auth & security posture**
   - Secrets are read from `.env` and stored locally.  
