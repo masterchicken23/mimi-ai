@@ -3,8 +3,9 @@
 Mimi AI is a voice-first companion designed for people living with Parkinson's. It connects to your bank (via Plaid), your email, and your calendar (via Microsoft Outlook / Graph), then surfaces an AI “Mimi” persona that can talk you through your finances, calendar, recent activity, and next steps so you can stay on top of things by speaking, not typing or tapping.
 
 ---
-
-## Live deployment: tbd .com
+!!!!!! 🐿️🐿️🐿️🐿️🐿️🐿️
+## Live deployment: https://mimi-ai-nu.vercel.app/
+!!!!!! 🐿️🐿️🐿️🐿️🐿️🐿️
 
 
 ### How to run the demo
