@@ -689,6 +689,10 @@ export default function DashboardPage() {
   const [transcript, setTranscript] = useState([])
   const [userName] = useState(state?.userName || 'User')
 
+  const wakeWordRef = useRef(null)
+  const [wakeWordActive, setWakeWordActive] = useState(false)
+  const startCallRef = useRef(null)
+
   const [panelView, setPanelView] = useState(PANEL_VIEWS.SUMMARY)
   const [inboxEmails, setInboxEmails] = useState([])
   const [emailsLoading, setEmailsLoading] = useState(false)
@@ -1015,6 +1019,7 @@ export default function DashboardPage() {
 
     await vapiRef.current.start(ASSISTANT_ID, overrides)
   }
+  startCallRef.current = startCall
 
   // Keyboard handler
   useEffect(() => {
@@ -1044,6 +1049,76 @@ export default function DashboardPage() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [status, bankSummary, hasEmailData, bankLoading, emailConnectLoading])
+
+  // Wake word detection — listens for "Hey Mimi" to auto-start the call
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) return
+
+    if (status !== STATUS.IDLE) {
+      if (wakeWordRef.current) {
+        try { wakeWordRef.current.stop() } catch (_) {}
+        wakeWordRef.current = null
+      }
+      setWakeWordActive(false)
+      return
+    }
+
+    let cancelled = false
+
+    function startListening() {
+      if (cancelled) return
+      const rec = new SpeechRecognition()
+      rec.continuous = false
+      rec.interimResults = true
+      rec.lang = 'en-US'
+      rec.maxAlternatives = 5
+
+      rec.onstart = () => setWakeWordActive(true)
+
+      rec.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const alts = Array.from(event.results[i]).map((a) => a.transcript.toLowerCase())
+          const triggered = alts.some((t) =>
+            t.includes('hey mimi') ||
+            t.includes('hey, mimi') ||
+            t.includes('hey mimmi') ||
+            t.includes('hay mimi') ||
+            t.includes('hey me me')
+          )
+          if (triggered) {
+            cancelled = true
+            try { rec.stop() } catch (_) {}
+            startCallRef.current?.()
+            return
+          }
+        }
+      }
+
+      rec.onend = () => {
+        setWakeWordActive(false)
+        if (!cancelled) setTimeout(startListening, 300)
+      }
+
+      rec.onerror = () => {
+        // onend fires after every error and will restart automatically
+      }
+
+      wakeWordRef.current = rec
+      try { rec.start() } catch (_) {}
+    }
+
+    startListening()
+
+    return () => {
+      cancelled = true
+      if (wakeWordRef.current) {
+        try { wakeWordRef.current.stop() } catch (_) {}
+        wakeWordRef.current = null
+      }
+      setWakeWordActive(false)
+    }
+  }, [status])
 
   const endCall = () => {
     setStatus(STATUS.ENDING)
@@ -1216,7 +1291,8 @@ export default function DashboardPage() {
                   </p>
 
                   <p className="text-gray-500 text-xs mb-5 text-center">
-                    Press <span className="text-green-400/70 font-medium">space</span> or tap below to begin.
+                    Press <span className="text-green-400/70 font-medium">space</span>, tap below, or say{' '}
+                    <span className="text-violet-400/80 font-medium">"Hey Mimi"</span> to begin.
                   </p>
 
                   <button
@@ -1230,7 +1306,22 @@ export default function DashboardPage() {
                     Start Conversation
                   </button>
 
-                  <p className="text-gray-500 text-xs mt-7">
+                  {/* Wake-word listening indicator */}
+                  <div className="mt-5 flex items-center gap-2">
+                    {wakeWordActive ? (
+                      <>
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
+                        </span>
+                        <span className="text-violet-400/80 text-xs">Listening for <span className="font-medium">"Hey Mimi"</span>…</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-600 text-xs">Wake word not available in this browser</span>
+                    )}
+                  </div>
+
+                  <p className="text-gray-500 text-xs mt-4">
                     say <span className="text-red-400/70 font-medium">"bye bye"</span> to stop conversation
                   </p>
                 </div>
