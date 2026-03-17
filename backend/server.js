@@ -908,6 +908,10 @@ app.get('/health', (req, res) => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// Start server (Gemini Live connects directly from the browser — no proxy)
+// ---------------------------------------------------------------------------
+
 app.listen(PORT, async () => {
   console.log(`Backend running on ${BACKEND_ORIGIN}`)
 

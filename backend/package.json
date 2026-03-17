@@ -13,11 +13,14 @@
   "license": "ISC",
   "dependencies": {
     "@azure/msal-node": "^5.0.6",
+    "@google/genai": "^1.45.0",
+    "@google/generative-ai": "^0.24.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "openai": "^6.27.0",
-    "plaid": "^41.4.0"
+    "plaid": "^41.4.0",
+    "ws": "^8.19.0"
   }
 }

@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
-import Vapi from '@vapi-ai/web'
 import { usePlaidLink } from 'react-plaid-link'
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts'
+import { GoogleGenAI, Modality } from '@google/genai'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
-const VAPI_PUBLIC_KEY = import.meta.env.VITE_VAPI_PUBLIC_KEY
-const ASSISTANT_ID = '998c3e7f-ed8c-4afb-a49c-40cf6649911c'
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-native-audio-preview-12-2025'
+const geminiClient = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null
 
 const STATUS = {
   IDLE: 'idle',
@@ -63,52 +64,52 @@ function BankSummary({ data, compact }) {
   return (
     <div
       className={`
-        bg-white/[0.06] backdrop-blur-md rounded-2xl shadow-sm border border-white/[0.08] overflow-hidden
+        bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden
         transition-all duration-700 ease-in-out w-full
         ${compact ? 'max-h-[520px]' : ''}
       `}
     >
       <div className="px-5 pt-5 pb-4">
         <div className="flex items-center justify-between mb-1">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
             {data.accountName}
           </p>
           {data.mask && (
-            <span className="text-[11px] text-gray-500 font-mono">••{data.mask}</span>
+            <span className="text-[11px] text-gray-400 font-mono">••{data.mask}</span>
           )}
         </div>
 
-        <p className="text-3xl font-bold text-white tracking-tight mt-1">
+        <p className="text-3xl font-bold text-gray-900 tracking-tight mt-1">
           {fmt(data.balance)}
         </p>
         <p className="text-[11px] text-gray-400 mt-0.5">Available balance</p>
       </div>
 
-      <div className="mx-5 border-t border-white/[0.06]" />
+      <div className="mx-5 border-t border-gray-200/60" />
 
       <div className="px-5 py-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
             This month
           </p>
           <span className="text-xs font-semibold text-red-500">{fmt(data.monthlySpent)}</span>
         </div>
 
-        <div className="w-full bg-white/[0.08] rounded-full h-1.5 mb-1">
+        <div className="w-full bg-gray-200/50 rounded-full h-1.5 mb-1">
           <div
-            className="bg-gradient-to-r from-blue-400 to-blue-500 h-1.5 rounded-full transition-all duration-500"
+            className="bg-gradient-to-r from-amber-400 to-orange-400 h-1.5 rounded-full transition-all duration-500"
             style={{ width: `${Math.min((data.monthlySpent / (data.balance || 1)) * 100, 100)}%` }}
           />
         </div>
-        <p className="text-[10px] text-gray-500 text-right">
+        <p className="text-[10px] text-gray-400 text-right">
           {((data.monthlySpent / (data.balance || 1)) * 100).toFixed(1)}% of balance
         </p>
       </div>
 
-      <div className="mx-5 border-t border-white/[0.06]" />
+      <div className="mx-5 border-t border-gray-200/60" />
 
       <div className="px-5 py-4">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-3">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">
           Recent transactions
         </p>
         <div className="flex flex-col gap-2.5">
@@ -120,8 +121,8 @@ function BankSummary({ data, compact }) {
                   <div
                     className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       isIncome
-                        ? 'bg-emerald-500/10 text-emerald-400'
-                        : 'bg-white/[0.05] text-gray-500'
+                        ? 'bg-emerald-50 text-emerald-500'
+                        : 'bg-gray-100 text-gray-400'
                     }`}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -133,15 +134,15 @@ function BankSummary({ data, compact }) {
                     </svg>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-gray-200 truncate">
+                    <p className="text-xs font-medium text-gray-700 truncate">
                       {txn.merchant || txn.name}
                     </p>
-                    <p className="text-[10px] text-gray-500">{txn.date}</p>
+                    <p className="text-[10px] text-gray-400">{txn.date}</p>
                   </div>
                 </div>
                 <span
                   className={`text-xs font-semibold flex-shrink-0 ml-3 ${
-                    isIncome ? 'text-emerald-500' : 'text-gray-400'
+                    isIncome ? 'text-emerald-600' : 'text-gray-500'
                   }`}
                 >
                   {isIncome ? '+' : '-'}{fmt(txn.amount)}
@@ -150,7 +151,7 @@ function BankSummary({ data, compact }) {
             )
           })}
           {data.last5.length === 0 && (
-            <p className="text-xs text-gray-500 text-center py-2">No transactions yet</p>
+            <p className="text-xs text-gray-400 text-center py-2">No transactions yet</p>
           )}
         </div>
       </div>
@@ -187,8 +188,8 @@ function detectPanelIntent(spoken) {
 // ---------------------------------------------------------------------------
 
 const CATEGORY_PALETTE = [
-  '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981',
-  '#06B6D4', '#F43F5E', '#6366F1', '#14B8A6', '#EAB308',
+  '#4285F4', '#EA4335', '#FBBC04', '#34A853', '#FF6D01',
+  '#46BDC6', '#7B61FF', '#F538A0', '#1AA260', '#185ABC',
 ]
 
 function buildCategoryData(transactions) {
@@ -232,12 +233,12 @@ function CategoryChart({ transactions }) {
   const total = data.reduce((s, d) => s + d.value, 0)
 
   return (
-    <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl shadow-sm border border-white/[0.08] overflow-hidden w-full animate-fade-in">
+    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden w-full animate-fade-in">
       <div className="px-5 pt-5 pb-2">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
           Spending by Category
         </p>
-        <p className="text-2xl font-bold text-white tracking-tight mt-1">{fmt(total)}</p>
+        <p className="text-2xl font-bold text-gray-900 tracking-tight mt-1">{fmt(total)}</p>
         <p className="text-[11px] text-gray-400 mt-0.5">Total spending</p>
       </div>
 
@@ -260,7 +261,7 @@ function CategoryChart({ transactions }) {
             </Pie>
             <Tooltip
               formatter={(v) => fmt(v)}
-              contentStyle={{ fontSize: 12, borderRadius: 10, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,.4)', background: '#1e1e2a', color: '#e5e7eb' }}
+              contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,.08)', background: '#ffffff', color: '#374151' }}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -275,9 +276,9 @@ function CategoryChart({ transactions }) {
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ background: CATEGORY_PALETTE[i % CATEGORY_PALETTE.length] }}
                 />
-                <span className="text-xs text-gray-400 truncate">{d.name}</span>
+                <span className="text-xs text-gray-500 truncate">{d.name}</span>
               </div>
-              <span className="text-xs font-semibold text-gray-200 flex-shrink-0 ml-3">{fmt(d.value)}</span>
+              <span className="text-xs font-semibold text-gray-800 flex-shrink-0 ml-3">{fmt(d.value)}</span>
             </div>
           ))}
         </div>
@@ -291,9 +292,9 @@ function MonthlyChart({ transactions }) {
   const max = Math.max(...data.map((d) => d.total), 1)
 
   return (
-    <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl shadow-sm border border-white/[0.08] overflow-hidden w-full animate-fade-in">
+    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden w-full animate-fade-in">
       <div className="px-5 pt-5 pb-2">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
           Monthly Spending
         </p>
         <p className="text-[11px] text-gray-400 mt-1">Last {data.length} months</p>
@@ -302,27 +303,27 @@ function MonthlyChart({ transactions }) {
       <div className="px-2 pb-2">
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
             <XAxis
               dataKey="month"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: '#6B7280' }}
+              tick={{ fontSize: 11, fill: '#9CA3AF' }}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: '#4B5563' }}
+              tick={{ fontSize: 10, fill: '#9CA3AF' }}
               tickFormatter={(v) => `$${(v / 1000).toFixed(v >= 1000 ? 1 : 0)}k`}
               domain={[0, Math.ceil(max * 1.15)]}
             />
             <Tooltip
               formatter={(v) => fmt(v)}
-              contentStyle={{ fontSize: 12, borderRadius: 10, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,.4)', background: '#1e1e2a', color: '#e5e7eb' }}
+              contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,.08)', background: '#ffffff', color: '#374151' }}
             />
             <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={36}>
               {data.map((_, i) => (
-                <Cell key={i} fill={i === data.length - 1 ? '#3B82F6' : 'rgba(255,255,255,0.08)'} />
+                <Cell key={i} fill={i === data.length - 1 ? '#4285F4' : 'rgba(0,0,0,0.06)'} />
               ))}
             </Bar>
           </BarChart>
@@ -333,7 +334,7 @@ function MonthlyChart({ transactions }) {
         <div className="flex flex-col gap-1.5">
           {data.map((d, i) => (
             <div key={d.month} className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">{d.month}</span>
+              <span className="text-xs text-gray-500">{d.month}</span>
               <span
                 className={`text-xs font-semibold ${i === data.length - 1 ? 'text-blue-600' : 'text-gray-400'}`}
               >
@@ -409,21 +410,21 @@ function EmailInbox({ emails, loading, error }) {
   const unreadCount = emails.filter((e) => e.unread).length
 
   return (
-    <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl shadow-sm border border-white/[0.08] overflow-hidden w-full animate-fade-in">
+    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden w-full animate-fade-in">
       <div className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-violet-500/15 flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
             Inbox
           </p>
         </div>
         {unreadCount > 0 && (
-          <span className="text-[10px] font-bold bg-violet-500 text-white px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full">
             {unreadCount} new
           </span>
         )}
@@ -431,7 +432,7 @@ function EmailInbox({ emails, loading, error }) {
 
       {loading && (
         <div className="px-5 py-8 text-center">
-          <div className="w-5 h-5 border-2 border-violet-200 border-t-violet-500 rounded-full animate-spin mx-auto mb-2" />
+          <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-2" />
           <p className="text-xs text-gray-400">Loading inbox…</p>
         </div>
       )}
@@ -454,26 +455,26 @@ function EmailInbox({ emails, loading, error }) {
             <div
               key={email.id}
               className={`
-                px-5 py-3 border-t border-white/[0.04] cursor-pointer
-                hover:bg-violet-500/[0.08] transition-colors
-                ${email.unread ? 'bg-violet-500/[0.06]' : ''}
+                px-5 py-3 border-t border-gray-100 cursor-pointer
+                hover:bg-blue-50/60 transition-colors
+                ${email.unread ? 'bg-blue-50/40' : ''}
               `}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     {email.unread && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
                     )}
-                    <p className={`text-xs truncate ${email.unread ? 'font-semibold text-white' : 'font-medium text-gray-400'}`}>
+                    <p className={`text-xs truncate ${email.unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-500'}`}>
                       {email.sender}
                     </p>
                   </div>
-                  <p className={`text-[11px] truncate mt-0.5 ${email.unread ? 'text-gray-300' : 'text-gray-400'}`}>
+                  <p className={`text-[11px] truncate mt-0.5 ${email.unread ? 'text-gray-600' : 'text-gray-400'}`}>
                     {email.subject}
                   </p>
                 </div>
-                <span className="text-[10px] text-gray-500 flex-shrink-0 mt-0.5">{email.time}</span>
+                <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">{email.time}</span>
               </div>
             </div>
           ))}
@@ -559,18 +560,18 @@ function CalendarCard({ events }) {
   const upcoming = events.slice(0, 4)
 
   return (
-    <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl shadow-sm border border-white/[0.08] overflow-hidden w-full animate-fade-in">
+    <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden w-full animate-fade-in">
       <div className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34A853" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">
             Calendar
           </p>
         </div>
@@ -583,18 +584,18 @@ function CalendarCard({ events }) {
         {upcoming.map((evt) => (
           <div
             key={evt.id}
-            className="px-5 py-2.5 border-t border-white/[0.04] hover:bg-emerald-500/[0.06] transition-colors"
+            className="px-5 py-2.5 border-t border-gray-100 hover:bg-emerald-50/60 transition-colors"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-gray-200 truncate">
+                <p className="text-xs font-medium text-gray-700 truncate">
                   {evt.title}
                 </p>
-                <p className="text-[11px] text-emerald-400/70 mt-0.5">
+                <p className="text-[11px] text-emerald-500 mt-0.5">
                   {evt.time}
                 </p>
               </div>
-              <span className="text-[10px] text-gray-500 flex-shrink-0 mt-0.5">
+              <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">
                 {evt.date}
               </span>
             </div>
@@ -642,6 +643,212 @@ function buildContextString(userData) {
 }
 
 // ---------------------------------------------------------------------------
+// System prompt for Gemini Live
+// ---------------------------------------------------------------------------
+
+function buildSystemPrompt({ userName, timeOfDay, userContext, bankConnected, emailConnected }) {
+  return `## Financial Voice Assistant Prompt
+
+# Identity & Purpose
+
+You are Mimi, a voice-based personal assistant designed to help ${userName} manage their bank accounts and email entirely through conversation.
+
+Here is the user's personal data and context:
+${userContext}
+
+Your primary purpose is to help users access and understand their financial information using Plaid integrations. You can retrieve account balances, recent transactions, spending summaries, and other financial insights. You can also get the user's name from their bank account, if that is provided.
+
+Your secondary purpose is to help users manage their email, including reading emails aloud, summarizing inbox activity, identifying important messages, and helping draft replies.
+
+Mimi is designed to support users who may rely entirely on voice interaction, meaning the experience must work without requiring any buttons, mouse interaction, or typing.
+
+Your goal is to act as a friendly, energetic assistant similar to JARVIS, while also feeling supportive and trustworthy.
+
+Your role is to make interacting with finances and communication simple, safe, and accessible through voice.
+
+# Voice & Persona
+
+Personality
+
+- Friendly, energetic, and supportive
+- Calm and reassuring when explaining information
+- Confident and capable like a personal assistant
+- Patient and understanding if the user takes longer to respond
+- Conversational rather than robotic
+
+Mimi should feel like a trusted assistant, a helpful companion, and a capable digital aide similar to JARVIS.
+
+Avoid sounding overly corporate or clinical.
+
+# Speech Characteristics
+
+- Speak clearly and at a moderate pace
+- Use short, easy-to-follow sentences
+- Prefer conversational phrasing
+- Avoid overly technical explanations unless requested
+- Structure financial information clearly
+
+Use natural transitions like: "Let me check that for you.", "Here's what I found.", "One moment while I look that up.", "Would you like more details?"
+
+Pause naturally between pieces of information.
+
+Use the user's name answering questions when doing so will create a sense of connection and understanding.
+
+## Core Capabilities
+
+# Banking Assistance (Primary Function)
+
+Mimi can access bank information through Plaid and assist with: Checking account balances, Reviewing recent transactions, Summarizing spending, Identifying unusual or large charges, Explaining where money is being spent, Comparing spending over time.
+
+When presenting financial information:
+1. Start with the key insight
+2. Provide a brief explanation
+3. Offer deeper details if requested
+
+Example: "Your checking account currently has $2,340 available. Over the last week, most of your spending went to groceries and dining. Would you like me to review those transactions?"
+
+Never invent financial information.
+
+If data cannot be accessed: "I'm having trouble accessing that information right now, but we can try again in a moment."
+
+# Email Assistance (Secondary Function)
+
+Mimi can assist with inbox management.
+
+Capabilities include: Reading new emails, Summarizing inbox activity, Identifying important or urgent messages, Searching for specific emails, Drafting responses, Confirming before sending messages.
+
+When the user asks about emails:
+- Emails in the context are listed newest first (item 1 is the most recent).
+- Each email line has: position number, From, Subject, read/unread status, received time, and a short preview.
+- When the user says "read my emails", "what emails do I have", or "show me my inbox", list the first 5 emails: sender, subject, and whether it's unread. Keep it brief.
+- When the user says "read email number [N]" or "open the email from [sender]", read out the Subject and the full Preview for that email.
+- When the user asks "who sent me an email about X", scan all subjects and previews and report the matching sender and subject.
+- When reading emails: 1. Provide a short summary first 2. Ask if the user wants the full message
+- Always refer to emails by their natural position (e.g. "your most recent email", "the second email", "email from Apple").
+- If two emails have the same sender, distinguish them by subject or received time.
+- Do not read out internal IDs or raw timestamps — use natural language (e.g. "this morning at 9 AM", "yesterday", "last Tuesday").
+
+If the user asks you to write an email to someone, say: "I can't write emails just yet, as this feature is still in development. In the future, I hope to be able to assist you with that. I can summarize your most recent emails. Would you like that?"
+
+# Accessibility Awareness
+
+Mimi is designed for users who may rely entirely on voice control.
+
+Because of this: Users should never need to press buttons, All interactions should be voice-driven, Instructions should be simple and clear, Allow extra time for users to respond.
+
+Avoid instructions like: "Click the button." Instead say: "I can take care of that for you."
+
+Always maintain a patient and supportive tone.
+
+# Conversation Flow
+
+## Greeting
+
+Start interactions warmly and efficiently.
+
+Example: "Hi, I'm Mimi. How can I help you today?"
+
+If the user pauses: "I'm here whenever you're ready."
+
+## Purpose Determination
+
+1. Ask an open question: "How can I assist you today?"
+2. Identify whether the request relates to: Bank information, Spending insights, Email management, General assistance
+3. Confirm before performing actions.
+
+Example: "Got it. You'd like to check your recent bank transactions. Let me pull that up."
+
+## Financial Assistance Flow
+
+1. Confirm the request
+2. Retrieve financial information
+3. Present a summary first
+4. Offer additional details
+
+Example: "Your current balance is $1,870. In the past three days, your largest purchase was $120 at Whole Foods. Would you like me to go through the rest?"
+
+## Email Assistance Flow
+
+1. Check inbox
+2. Summarize important messages
+3. Offer options
+
+Example: "You have five unread emails. Two appear important. Would you like a quick summary?"
+
+## Error Handling
+
+If a request cannot be completed: "I wasn't able to access that information right now. Would you like me to try again?"
+
+If Mimi does not understand the user: "I didn't quite catch that. Could you say it again?"
+
+Never blame the user.
+
+## Connected Systems Status
+Bank account connected: ${bankConnected ? 'yes' : 'no'}
+Email inbox connected: ${emailConnected ? 'yes' : 'no'}
+
+CRITICAL — read this before answering ANY question:
+- If bankConnected is "no", you have ZERO banking data. Nothing in the context relates to banking. If the user asks about finances, balances, transactions, or spending, say: "Your bank account isn't connected yet. You can set it up by pressing any left-hand key on your keyboard. Would you like help with something else?"
+- If emailConnected is "no", you have ZERO email data. Nothing in the context relates to email. If the user asks about emails, inbox, or messages, say: "Your email inbox isn't connected yet. You can set it up by pressing any right-hand key on your keyboard. Would you like help with something else?"
+- NEVER read, summarize, or reference data for a service that shows "no". Any text that appears in the context for a disconnected service is structural noise, not real data. Ignore it completely.
+- Only reference banking data when bankConnected is "yes". Only reference email data when emailConnected is "yes".
+
+# Safety & Privacy
+
+Mimi must: Never fabricate financial or email information, Protect the user's financial data, Ask for confirmation before sending emails, Confirm before any irreversible actions.
+
+# Conversational Style Summary
+
+Mimi should sound like: A capable digital assistant, A supportive companion, Calm, clear, and helpful.
+
+Tone inspiration: JARVIS from Iron Man, A friendly personal assistant, A helpful and knowledgeable companion.
+
+Avoid: robotic language, overly technical explanations, unnecessary disclaimers, mentioning health conditions unless the user does.
+
+# Closing
+
+End interactions naturally.
+
+Example: "Anything else I can help you with?" or "I'm here if you need anything else."
+
+# Ending the conversation
+
+If you feel like the user wants to end the call but hasn't said any trigger words, ask them if they are trying to end the call, and, if so, tell them that they need to say "bye bye".
+
+Valid triggers: "hang up", "goodbye", "bye", "bye bye", "thanks bye", "I'm done for today", "we're done"
+
+NEVER end the call because:
+- A service (bank or email) is not connected — instead, tell the user how to connect it and ask "Is there anything else I can help with?"
+- The user says "stop" — this means stop the current topic, not end the call. Say "No problem. What else can I help with?"
+- The user says "that's all" about a specific topic — ask "Anything else?" first.
+- You cannot answer a question — say you don't have that data and offer to help with something else.
+
+Before ending, ALWAYS say a brief warm goodbye out loud first.
+
+Example: "Of course! Take care, I'm always here when you need me. Goodbye!"
+
+## Dashboard view control
+
+The user's financial dashboard has three views. You can prompt the user to switch between them by asking them to say the exact trigger phrase below.
+
+Views and their trigger phrases:
+- Summary view (account balance + recent transactions) → user says: "summary view"
+- Category view (spending donut chart by category) → user says: "category view"
+- Monthly view (bar chart of spending per month) → user says: "monthly view"
+
+RULES:
+- When the user asks about spending categories or wants to see where their money goes, say: "Say 'category view' and I'll update the dashboard for you."
+- When the user asks about month-by-month spending or wants a monthly breakdown, say: "Say 'monthly view' and I'll update the dashboard for you."
+- When the user wants to go back to their balance or account overview, say: "Say 'summary view' and I'll update the dashboard for you."
+- Only suggest ONE phrase per view — never list multiple options.
+- When the user says one of the trigger phrases ("summary view", "category view", "monthly view", "summary", "categories", "monthly", "monthly spending"), the dashboard will update automatically. Do NOT repeat the phrase back. Say: "Done — your dashboard view has been updated."
+- NEVER end the call when you switch financial views. None of the trigger words or actions on the financial dashboard should make you shutdown.
+
+Current time of day: ${timeOfDay}
+`
+}
+
+// ---------------------------------------------------------------------------
 // Keyboard zones & tips
 // ---------------------------------------------------------------------------
 
@@ -681,9 +888,19 @@ export default function DashboardPage() {
     userContext.current = buildContextString(userData)
   }, [userData])
 
-  const vapiRef = useRef(null)
+  const geminiSessionRef = useRef(null)
+  const audioCtxRef = useRef(null)
+  const micStreamRef = useRef(null)
+  const processorRef = useRef(null)
+  const audioQueueRef = useRef([])
+  const isPlayingRef = useRef(false)
+  const mutedRef = useRef(false)
+  const nextStartTimeRef = useRef(0)
+  const activeSourcesRef = useRef([])
+
   const transcriptEndRef = useRef(null)
   const [status, setStatus] = useState(STATUS.IDLE)
+  const statusRef = useRef(STATUS.IDLE)
   const [isMuted, setIsMuted] = useState(false)
   const [volumeLevel, setVolumeLevel] = useState(0)
   const [transcript, setTranscript] = useState([])
@@ -810,64 +1027,12 @@ export default function DashboardPage() {
     return txns
   }, [userData])
 
-  // VAPI
   useEffect(() => {
-    const vapi = new Vapi(VAPI_PUBLIC_KEY)
-    vapiRef.current = vapi
-
-    vapi.on('call-start', () => setStatus(STATUS.ACTIVE))
-    vapi.on('call-end', () => {
-      setStatus(STATUS.IDLE)
-      setVolumeLevel(0)
-      setIsMuted(false)
-    })
-    vapi.on('volume-level', (level) => setVolumeLevel(level))
-    vapi.on('message', (msg) => {
-      // VAPI's endCall tool fires this — the AI decided the user wants to leave
-      if (
-        msg.type === 'function-call' &&
-        msg.functionCall?.name === 'endCall'
-      ) {
-        setStatus(STATUS.ENDING)
-        return
-      }
-
-      if (msg.type === 'transcript' && msg.transcriptType === 'final') {
-        setTranscript((prev) => [
-          ...prev,
-          { role: msg.role, text: msg.transcript },
-        ])
-
-        if (msg.role === 'user') {
-          const spoken = msg.transcript.toLowerCase().trim()
-
-          // Dashboard view switching takes priority — never end call on a view trigger
-          const intent = detectPanelIntent(spoken)
-          if (intent) {
-            setPanelView(intent)
-            return
-          }
-
-          // Fallback client-side end-call detection (safety net)
-          const END_PHRASES = [
-            'end this call', 'goodbye', 'good bye',
-            'bye bye', 'bye mimi', 'bye-bye',
-          ]
-          const isExactBye = spoken === 'bye' || spoken === 'thanks bye'
-          if (isExactBye || END_PHRASES.some((p) => spoken.includes(p))) {
-            setStatus(STATUS.ENDING)
-            vapi.stop()
-            return
-          }
-        }
-      }
-    })
-    vapi.on('error', (err) => {
-      console.error('VAPI error:', err)
-      setStatus(STATUS.IDLE)
-    })
-
-    return () => { vapi.stop() }
+    return () => {
+      try { geminiSessionRef.current?.close() } catch {}
+      micStreamRef.current?.getTracks().forEach((t) => t.stop())
+      audioCtxRef.current?.close()
+    }
   }, [])
 
   useEffect(() => {
@@ -957,18 +1122,97 @@ export default function DashboardPage() {
     return () => { cancelled = true }
   }, [outlookUserId, demoMode, userData])
 
+  // ---------------------------------------------------------------------------
+  // Audio helpers for Gemini PCM playback (gapless scheduled approach)
+  // ---------------------------------------------------------------------------
+
+  const flushAudio = useCallback(() => {
+    audioQueueRef.current = []
+    for (const src of activeSourcesRef.current) {
+      try { src.stop() } catch {}
+    }
+    activeSourcesRef.current = []
+    nextStartTimeRef.current = 0
+    isPlayingRef.current = false
+    setVolumeLevel(0)
+  }, [])
+
+  const enqueueAudio = useCallback((b64) => {
+    const ctx = audioCtxRef.current
+    if (!ctx) return
+
+    const raw = atob(b64)
+    const int16 = new Int16Array(raw.length / 2)
+    for (let i = 0; i < int16.length; i++) {
+      int16[i] = raw.charCodeAt(i * 2) | (raw.charCodeAt(i * 2 + 1) << 8)
+    }
+
+    let sum = 0
+    for (let i = 0; i < int16.length; i++) sum += (int16[i] / 32768) ** 2
+    const rms = Math.sqrt(sum / int16.length)
+    setVolumeLevel(Math.min(rms * 4, 1))
+
+    const float32 = new Float32Array(int16.length)
+    for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768
+
+    const buf = ctx.createBuffer(1, float32.length, 24000)
+    buf.getChannelData(0).set(float32)
+    const src = ctx.createBufferSource()
+    src.buffer = buf
+    src.connect(ctx.destination)
+
+    const now = ctx.currentTime
+    const startAt = Math.max(nextStartTimeRef.current, now)
+    nextStartTimeRef.current = startAt + buf.duration
+
+    src.onended = () => {
+      activeSourcesRef.current = activeSourcesRef.current.filter((s) => s !== src)
+      if (activeSourcesRef.current.length === 0) {
+        isPlayingRef.current = false
+        setVolumeLevel(0)
+      }
+    }
+
+    activeSourcesRef.current.push(src)
+    isPlayingRef.current = true
+    src.start(startAt)
+  }, [])
+
+  // ---------------------------------------------------------------------------
+  // Start call — connects directly to Gemini Live from the browser
+  // ---------------------------------------------------------------------------
+
   const startCall = async () => {
+    if (statusRef.current !== STATUS.IDLE) return
+    statusRef.current = STATUS.CONNECTING
     setStatus(STATUS.CONNECTING)
     setTranscript([])
+    mutedRef.current = false
+    setIsMuted(false)
 
-    const bankConnected = Boolean(bankSummary)
-    const emailConnected = inboxEmails.length > 0
+    try { geminiSessionRef.current?.close() } catch {}
+    geminiSessionRef.current = null
+    micStreamRef.current?.getTracks().forEach((t) => t.stop())
+    micStreamRef.current = null
+    if (processorRef.current) {
+      processorRef.current.node.disconnect()
+      processorRef.current.context.close().catch(() => {})
+      processorRef.current = null
+    }
+    audioCtxRef.current?.close().catch(() => {})
+    audioCtxRef.current = null
 
-    // Start from the base context (uploaded JSON files)
+    audioQueueRef.current = []
+    isPlayingRef.current = false
+    nextStartTimeRef.current = 0
+    activeSourcesRef.current = []
+
+    const isBankConnected = Boolean(bankSummary)
+    const isEmailConnected = inboxEmails.length > 0
+
     let context = userContext.current || ''
 
-    // Append live Outlook inbox so VAPI can actually read emails
-    if (emailConnected) {
+    if (isEmailConnected) {
       const sortedEmails = [...inboxEmails].sort((a, b) => {
         const aTime = a.receivedAtRaw ? new Date(a.receivedAtRaw).getTime() : 0
         const bTime = b.receivedAtRaw ? new Date(b.receivedAtRaw).getTime() : 0
@@ -991,35 +1235,226 @@ export default function DashboardPage() {
         emailLines
     }
 
-    // Append live bank summary so VAPI has structured numbers
-    if (bankConnected) {
-      const fmt = (n) =>
+    if (isBankConnected) {
+      const fmtCur = (n) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Math.abs(n))
       const s = bankSummary
       const txnLines = s.last5
-        .map((t) => `  - ${t.date} | ${t.name} | ${fmt(t.amount)}${t.category ? ` (${t.category})` : ''}`)
+        .map((t) => `  - ${t.date} | ${t.name} | ${fmtCur(t.amount)}${t.category ? ` (${t.category})` : ''}`)
         .join('\n')
       context +=
         `\n\n--- BANK ACCOUNT SUMMARY ---\n` +
         `Account: ${s.accountName}${s.mask ? ` (••${s.mask})` : ''}\n` +
-        `Balance: ${fmt(s.balance)}\n` +
-        `Spent this month: ${fmt(s.monthlySpent)}\n` +
+        `Balance: ${fmtCur(s.balance)}\n` +
+        `Spent this month: ${fmtCur(s.monthlySpent)}\n` +
         `Recent transactions:\n${txnLines}`
     }
 
-    const overrides = {
-      variableValues: {
-        userName,
-        timeOfDay: getTimeOfDay(),
-        userContext: context,
-        bankConnected: bankConnected ? 'yes' : 'no',
-        emailConnected: emailConnected ? 'yes' : 'no',
-      },
+    const systemPrompt = buildSystemPrompt({
+      userName,
+      timeOfDay: getTimeOfDay(),
+      userContext: context,
+      bankConnected: isBankConnected,
+      emailConnected: isEmailConnected,
+    })
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 })
+    audioCtxRef.current = audioCtx
+
+    if (!geminiClient) {
+      console.error('VITE_GEMINI_API_KEY not set')
+      setStatus(STATUS.IDLE)
+      return
     }
 
-    await vapiRef.current.start(ASSISTANT_ID, overrides)
+    let setupDone = false
+
+    try {
+      const session = await geminiClient.live.connect({
+        model: GEMINI_MODEL,
+        config: {
+          responseModalities: [Modality.AUDIO],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
+          },
+          inputAudioTranscription: {},
+          outputAudioTranscription: {},
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+        callbacks: {
+          onopen: () => console.log('[Gemini] Direct browser connection established'),
+          onmessage: (msg) => {
+            if (msg.setupComplete) {
+              if (setupDone) return
+              setupDone = true
+              statusRef.current = STATUS.ACTIVE
+              setStatus(STATUS.ACTIVE)
+              startMicCapture()
+              return
+            }
+
+            const sc = msg.serverContent
+            if (!sc) return
+
+            if (sc.interrupted) {
+              flushAudio()
+              return
+            }
+
+            if (sc.modelTurn?.parts) {
+              setTranscript((prev) =>
+                prev.map((e) => (e.role === 'user' && e.streaming) ? { ...e, streaming: false } : e)
+              )
+              for (const part of sc.modelTurn.parts) {
+                if (part.inlineData?.mimeType?.startsWith('audio/pcm')) {
+                  enqueueAudio(part.inlineData.data)
+                }
+              }
+            }
+
+            if (sc.inputTranscription?.text) {
+              const text = sc.inputTranscription.text
+              if (text.trim()) {
+                setTranscript((prev) => {
+                  const last = prev[prev.length - 1]
+                  if (last && last.role === 'user' && last.streaming) {
+                    return [...prev.slice(0, -1), { role: 'user', text: last.text + text, streaming: true }]
+                  }
+                  return [...prev, { role: 'user', text, streaming: true }]
+                })
+
+                const spoken = text.toLowerCase()
+                const intent = detectPanelIntent(spoken)
+                if (intent) {
+                  setPanelView(intent)
+                  return
+                }
+
+                const END_PHRASES = [
+                  'end this call', 'goodbye', 'good bye',
+                  'bye bye', 'bye mimi', 'bye-bye',
+                ]
+                const isExactBye = spoken === 'bye' || spoken === 'thanks bye'
+                if (isExactBye || END_PHRASES.some((p) => spoken.includes(p))) {
+                  endCall()
+                }
+              }
+            }
+
+            if (sc.outputTranscription?.text) {
+              const text = sc.outputTranscription.text.trim()
+              if (text) {
+                setTranscript((prev) => {
+                  const finalized = prev.map((e) =>
+                    (e.role === 'user' && e.streaming) ? { ...e, streaming: false } : e
+                  )
+                  const last = finalized[finalized.length - 1]
+                  if (last && last.role === 'assistant' && last.streaming) {
+                    const joined = last.text.endsWith(' ') || text.startsWith(' ')
+                      ? last.text + text
+                      : last.text + ' ' + text
+                    return [...finalized.slice(0, -1), { role: 'assistant', text: joined, streaming: true }]
+                  }
+                  return [...finalized, { role: 'assistant', text, streaming: true }]
+                })
+              }
+            }
+
+            if (sc.turnComplete) {
+              setVolumeLevel(0)
+              setTranscript((prev) =>
+                prev.map((e) => (e.streaming ? { ...e, streaming: false } : e))
+              )
+            }
+          },
+          onerror: (e) => console.error('[Gemini] Error:', e?.message || e),
+          onclose: () => {
+            console.log('[Gemini] Session closed')
+            cleanupCall()
+          },
+        },
+      })
+
+      geminiSessionRef.current = session
+
+      session.sendClientContent({
+        turns: [{ role: 'user', parts: [{ text: 'The user just connected to the call. Greet them warmly.' }] }],
+        turnComplete: true,
+      })
+    } catch (err) {
+      console.error('[Gemini] Session error:', err)
+      audioCtx.close().catch(() => {})
+      audioCtxRef.current = null
+      statusRef.current = STATUS.IDLE
+      setStatus(STATUS.IDLE)
+    }
   }
   startCallRef.current = startCall
+
+  // ---------------------------------------------------------------------------
+  // Mic capture — streams 16 kHz PCM directly to Gemini via AudioWorklet
+  // ---------------------------------------------------------------------------
+
+  const startMicCapture = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      })
+      micStreamRef.current = stream
+
+      const micCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 })
+      await micCtx.audioWorklet.addModule('/pcm-processor.js')
+
+      const source = micCtx.createMediaStreamSource(stream)
+      const workletNode = new AudioWorkletNode(micCtx, 'pcm-processor')
+      processorRef.current = { node: workletNode, context: micCtx }
+
+      workletNode.port.onmessage = (e) => {
+        if (mutedRef.current) return
+        const session = geminiSessionRef.current
+        if (!session) return
+
+        const bytes = new Uint8Array(e.data)
+        let binary = ''
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+
+        try {
+          session.sendRealtimeInput({
+            audio: { data: btoa(binary), mimeType: 'audio/pcm;rate=16000' },
+          })
+        } catch (err) {
+          console.error('[Mic] Send error:', err.message)
+        }
+      }
+
+      source.connect(workletNode)
+      workletNode.connect(micCtx.destination)
+    } catch (err) {
+      console.error('Mic capture error:', err)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Call cleanup
+  // ---------------------------------------------------------------------------
+
+  const cleanupCall = useCallback(() => {
+    micStreamRef.current?.getTracks().forEach((t) => t.stop())
+    micStreamRef.current = null
+    if (processorRef.current) {
+      processorRef.current.node.disconnect()
+      processorRef.current.context.close().catch(() => {})
+      processorRef.current = null
+    }
+    geminiSessionRef.current = null
+    flushAudio()
+    audioCtxRef.current?.close().catch(() => {})
+    audioCtxRef.current = null
+    statusRef.current = STATUS.IDLE
+    setStatus(STATUS.IDLE)
+    setIsMuted(false)
+  }, [flushAudio])
 
   // Keyboard handler
   useEffect(() => {
@@ -1120,16 +1555,34 @@ export default function DashboardPage() {
     }
   }, [status])
 
-  const endCall = () => {
+  const endCall = useCallback(() => {
+    statusRef.current = STATUS.ENDING
     setStatus(STATUS.ENDING)
-    vapiRef.current.stop()
-  }
+    try { geminiSessionRef.current?.close() } catch {}
+    geminiSessionRef.current = null
+    micStreamRef.current?.getTracks().forEach((t) => t.stop())
+    micStreamRef.current = null
+    if (processorRef.current) {
+      processorRef.current.node.disconnect()
+      processorRef.current.context.close().catch(() => {})
+      processorRef.current = null
+    }
+    flushAudio()
+    audioCtxRef.current?.close().catch(() => {})
+    audioCtxRef.current = null
+    setTimeout(() => {
+      statusRef.current = STATUS.IDLE
+      setStatus(STATUS.IDLE)
+      setVolumeLevel(0)
+      setIsMuted(false)
+    }, 600)
+  }, [flushAudio])
 
-  const toggleMute = () => {
-    const next = !isMuted
-    vapiRef.current.setMuted(next)
+  const toggleMute = useCallback(() => {
+    const next = !mutedRef.current
+    mutedRef.current = next
     setIsMuted(next)
-  }
+  }, [])
 
   const isCallActive = status === STATUS.ACTIVE
   const isConnecting = status === STATUS.CONNECTING
@@ -1149,19 +1602,19 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen dashboard-bg flex flex-col">
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-8 py-5 bg-white/[0.04] backdrop-blur-md border-b border-white/[0.06]">
+      <header className="relative z-10 flex items-center justify-between px-8 py-5">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/20 to-violet-500/15 flex items-center justify-center text-lg shadow-sm">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-100 to-blue-100 flex items-center justify-center text-lg shadow-sm">
             🐿️
           </div>
-          <span className="text-white font-semibold text-lg">Mimi</span>
+          <span className="text-gray-800 font-semibold text-lg">Mimi</span>
         </div>
         <div className="flex items-center gap-4">
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-500 text-sm">
             Mimi — The Personal Assistant{userName && userName !== 'User' && (
               <>
                 {' to '}
-                <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent font-medium">
+                <span className="bg-gradient-to-r from-blue-600 to-amber-600 bg-clip-text text-transparent font-medium">
                   {userName}
                 </span>
               </>
@@ -1178,10 +1631,10 @@ export default function DashboardPage() {
           <div className="transition-all duration-700 ease-in-out flex-shrink-0 w-full lg:w-72">
             {bankSummary ? (
               <>
-                <p className="text-gray-400 text-xs text-center mb-2">
+                <p className="text-gray-500 text-xs text-center mb-2">
                   Toggle with your voice! Ask Mimi how to do it.
                 </p>
-                <div className="flex bg-white/[0.06] backdrop-blur-md rounded-xl border border-white/[0.08] p-0.5 mb-3 shadow-sm">
+                <div className="flex bg-white/50 backdrop-blur-xl rounded-xl border border-gray-200/40 p-0.5 mb-3 shadow-sm">
                   {[
                     { id: PANEL_VIEWS.SUMMARY, icon: (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1211,7 +1664,7 @@ export default function DashboardPage() {
                         transition-all duration-200
                         ${panelView === tab.id
                           ? 'bg-blue-500 text-white shadow-sm'
-                          : 'text-gray-500 hover:text-gray-300'
+                          : 'text-gray-400 hover:text-gray-600'
                         }
                       `}
                     >
@@ -1234,31 +1687,31 @@ export default function DashboardPage() {
             ) : (
               <div
                 onClick={() => !demoMode && !bankLoading && fetchBankLinkToken()}
-                className="bg-white/[0.06] backdrop-blur-md rounded-2xl border border-white/[0.08] overflow-hidden animate-fade-in cursor-pointer hover:bg-white/[0.08] transition-colors"
+                className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 overflow-hidden animate-fade-in cursor-pointer hover:bg-white/80 transition-colors"
               >
                 <div className="px-5 pt-5 pb-3">
                   <div className="flex items-center gap-2.5 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34A853" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
                         <line x1="1" y1="10" x2="23" y2="10" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-white text-sm font-semibold">Bank Account</p>
-                      <p className="text-gray-500 text-[10px]">{bankLoading ? 'Connecting…' : 'Not connected'}</p>
+                      <p className="text-gray-800 text-sm font-semibold">Bank Account</p>
+                      <p className="text-gray-400 text-[10px]">{bankLoading ? 'Connecting…' : 'Not connected'}</p>
                     </div>
                   </div>
-                  <p className="text-gray-400 text-xs leading-relaxed">
+                  <p className="text-gray-500 text-xs leading-relaxed">
                     Link your bank to unlock balance tracking, transaction history, and spending insights.
                   </p>
                 </div>
                 <div className="px-6 py-3 flex justify-center">
-                  <img src="/keyboardL.png" alt="Left-hand keys" className="w-full h-auto rounded-lg opacity-40" />
+                  <img src="/keyboardL.png" alt="Left-hand keys" className="w-full h-auto rounded-lg opacity-50" />
                 </div>
                 <div className="px-5 pb-5 text-center">
-                  <p className="text-[11px] text-gray-500">
-                    Press any <span className="text-emerald-400 font-medium">key on the green zone</span> to set up
+                  <p className="text-[11px] text-gray-400">
+                    Press any <span className="text-emerald-600 font-medium">key on the green zone</span> to set up
                   </p>
                 </div>
               </div>
@@ -1267,13 +1720,13 @@ export default function DashboardPage() {
 
           {/* CENTER — Conversation */}
           <div className="w-full flex-1 min-w-0 transition-all duration-700 ease-in-out">
-            <div className="bg-white/[0.06] backdrop-blur-md rounded-2xl shadow-sm border border-white/[0.08] overflow-hidden">
+            <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 overflow-hidden">
               {/* Idle / Start state */}
               {!hasStarted && (
                 <div className="flex flex-col items-center py-12 px-8 animate-fade-in">
-                  <div className="w-20 h-20 rounded-full bg-blue-500/10 flex items-center justify-center mb-5">
-                    <div className="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-5">
+                    <div className="w-14 h-14 rounded-full bg-blue-100/70 flex items-center justify-center">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
                         <line x1="12" y1="19" x2="12" y2="23" />
@@ -1282,24 +1735,24 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <h2 className="text-xl font-semibold text-white mb-2">
+                  <h2 className="text-xl font-semibold text-gray-800 mb-2">
                     Ready when you are
                   </h2>
 
-                  <p className="text-gray-400 text-sm mb-3 text-center max-w-sm leading-relaxed">
+                  <p className="text-gray-500 text-sm mb-3 text-center max-w-sm leading-relaxed">
                     Mimi is here for you — ready to help with finances, emails, scheduling, and anything you need.
                   </p>
 
-                  <p className="text-gray-500 text-xs mb-5 text-center">
-                    Press <span className="text-green-400/70 font-medium">space</span>, tap below, or say{' '}
-                    <span className="text-violet-400/80 font-medium">"Hey Mimi"</span> to begin.
+                  <p className="text-gray-400 text-xs mb-5 text-center">
+                    Press <span className="text-amber-500 font-medium">space</span>, tap below, or say{' '}
+                    <span className="text-blue-500 font-medium">"Hey Mimi"</span> to begin.
                   </p>
 
                   <button
                     onClick={startCall}
                     className="
-                      px-10 py-4 rounded-full bg-blue-500 text-white font-semibold text-base
-                      shadow-lg shadow-blue-500/20 hover:bg-blue-600 hover:shadow-blue-500/30
+                      px-10 py-4 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-base
+                      shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:brightness-105
                       active:scale-95 transition-all duration-200
                     "
                   >
@@ -1311,18 +1764,18 @@ export default function DashboardPage() {
                     {wakeWordActive ? (
                       <>
                         <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
                         </span>
-                        <span className="text-violet-400/80 text-xs">Listening for <span className="font-medium">"Hey Mimi"</span>…</span>
+                        <span className="text-blue-500 text-xs">Listening for <span className="font-medium">"Hey Mimi"</span>…</span>
                       </>
                     ) : (
-                      <span className="text-gray-600 text-xs">Wake word not available in this browser</span>
+                      <span className="text-gray-400 text-xs">Wake word not available in this browser</span>
                     )}
                   </div>
 
-                  <p className="text-gray-500 text-xs mt-4">
-                    say <span className="text-red-400/70 font-medium">"bye bye"</span> to stop conversation
+                  <p className="text-gray-400 text-xs mt-4">
+                    say <span className="text-red-400 font-medium">"bye bye"</span> to stop conversation
                   </p>
                 </div>
               )}
@@ -1339,10 +1792,10 @@ export default function DashboardPage() {
                               ? 'bg-green-400 animate-pulse'
                               : isConnecting
                               ? 'bg-amber-400 animate-pulse'
-                              : 'bg-gray-500 animate-pulse'
+                              : 'bg-gray-400 animate-pulse'
                           }`}
                         />
-                        <span className="text-xs text-gray-400 font-medium">
+                        <span className="text-xs text-gray-500 font-medium">
                           {isConnecting && 'Connecting…'}
                           {isCallActive && (isMuted ? 'Muted' : 'Listening…')}
                           {isEnding && 'Ending…'}
@@ -1355,8 +1808,8 @@ export default function DashboardPage() {
                           className={`
                             p-2 rounded-lg text-xs transition-all
                             ${isMuted
-                              ? 'bg-amber-500/15 text-amber-400'
-                              : 'bg-white/[0.05] text-gray-400 hover:bg-white/[0.1]'
+                              ? 'bg-amber-50 text-amber-500'
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200/70'
                             }
                             disabled:opacity-40
                           `}
@@ -1382,7 +1835,7 @@ export default function DashboardPage() {
                         <button
                           onClick={endCall}
                           disabled={!isCallActive}
-                          className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-40"
+                          className="p-2 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 transition-all disabled:opacity-40"
                           aria-label="End call"
                         >
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1404,8 +1857,8 @@ export default function DashboardPage() {
                           }}
                           className={`w-1 rounded-full ${
                             isCallActive && volumeLevel > 0.05
-                              ? 'bg-blue-400'
-                              : 'bg-white/10'
+                              ? 'bg-amber-400'
+                              : 'bg-gray-200/60'
                           }`}
                         />
                       ))}
@@ -1413,15 +1866,15 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Transcript area */}
-                  <div className="border-t border-white/[0.06]">
+                  <div className="border-t border-gray-200/40">
                     <div className="px-6 py-3">
-                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                         Conversation
                       </p>
                     </div>
                     <div className="px-6 pb-6 max-h-96 overflow-y-auto flex flex-col gap-3 scroll-smooth">
                       {transcript.length === 0 && (
-                        <p className="text-gray-500 text-sm text-center py-8">
+                        <p className="text-gray-400 text-sm text-center py-8">
                           {isConnecting
                             ? 'Connecting to Mimi…'
                             : 'Conversation will appear here…'}
@@ -1437,7 +1890,7 @@ export default function DashboardPage() {
                               max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed
                               ${entry.role === 'user'
                                 ? 'bg-blue-500 text-white rounded-br-md'
-                                : 'bg-white/[0.08] text-gray-200 rounded-bl-md'
+                                : 'bg-white/80 text-gray-700 border border-gray-100 rounded-bl-md'
                               }
                             `}
                           >
@@ -1465,7 +1918,7 @@ export default function DashboardPage() {
                   <button
                     onClick={disconnectOutlook}
                     disabled={emailConnectLoading}
-                    className="w-full px-4 py-2 rounded-xl border border-white/[0.08] text-[11px] font-medium text-gray-300 bg-white/[0.03] hover:bg-white/[0.06] disabled:opacity-50 transition-colors"
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200/40 text-[11px] font-medium text-gray-500 bg-white/40 hover:bg-white/60 disabled:opacity-50 transition-colors"
                   >
                     Disconnect Outlook
                   </button>
@@ -1474,31 +1927,31 @@ export default function DashboardPage() {
             ) : (
               <div
                 onClick={() => !demoMode && !emailConnectLoading && connectOutlook()}
-                className="bg-white/[0.06] backdrop-blur-md rounded-2xl border border-white/[0.08] overflow-hidden animate-fade-in cursor-pointer hover:bg-white/[0.08] transition-colors"
+                className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/60 overflow-hidden animate-fade-in cursor-pointer hover:bg-white/80 transition-colors"
               >
                 <div className="px-5 pt-5 pb-3">
                   <div className="flex items-center gap-2.5 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                         <polyline points="22,6 12,13 2,6" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-white text-sm font-semibold">Email & Calendar</p>
-                      <p className="text-gray-500 text-[10px]">{emailConnectLoading ? 'Connecting…' : 'Not connected'}</p>
+                      <p className="text-gray-800 text-sm font-semibold">Email & Calendar</p>
+                      <p className="text-gray-400 text-[10px]">{emailConnectLoading ? 'Connecting…' : 'Not connected'}</p>
                     </div>
                   </div>
-                  <p className="text-gray-400 text-xs leading-relaxed">
+                  <p className="text-gray-500 text-xs leading-relaxed">
                     Connect your Outlook inbox so Mimi can help you read your emails and see your calendar.
                   </p>
                 </div>
                 <div className="px-6 py-3 flex justify-center">
-                  <img src="/keyboardR.png" alt="Right-hand keys" className="w-full h-auto rounded-lg opacity-40" />
+                  <img src="/keyboardR.png" alt="Right-hand keys" className="w-full h-auto rounded-lg opacity-50" />
                 </div>
                 <div className="px-5 pb-5 text-center">
-                  <p className="text-[11px] text-gray-500">
-                    Press any <span className="text-blue-400 font-medium">key on the red zone</span> to set up
+                  <p className="text-[11px] text-gray-400">
+                    Press any <span className="text-blue-600 font-medium">key on the blue zone</span> to set up
                   </p>
                 </div>
               </div>
@@ -1507,15 +1960,15 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-8 text-center">
-          <p className="text-gray-500 text-xs">
-            <span className="text-gray-400 font-medium">Tip:</span>{' '}
+          <p className="text-gray-400 text-xs">
+            <span className="text-gray-500 font-medium">Tip:</span>{' '}
             {tipsTips[tipIndex]}
           </p>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 text-center py-4 border-t border-white/[0.06] bg-white/[0.03] backdrop-blur-sm">
+      <footer className="relative z-10 text-center py-4 border-t border-gray-200/40 bg-white/40 backdrop-blur-sm">
         <p className="text-gray-400 text-xs">
           Protected under HIPAA privacy regulations
         </p>

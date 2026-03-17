@@ -27,7 +27,7 @@
 }
 
 .dashboard-bg {
-  background: linear-gradient(135deg, #0f0f14 0%, #141320 30%, #18132a 50%, #1a1225 70%, #0f0f14 100%);
+  background: linear-gradient(160deg, #FEF7ED 0%, #FFF3E4 15%, #FFECD2 35%, #FFE0B2 50%, #F3E5F5 75%, #EDE7F6 100%);
   position: relative;
   overflow: hidden;
 }
@@ -37,25 +37,25 @@
   content: '';
   position: fixed;
   border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.2;
+  filter: blur(120px);
+  opacity: 0.45;
   pointer-events: none;
   z-index: 0;
 }
 
 .dashboard-bg::before {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, #4f46e5, transparent);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, #FBBC04, #FF980020, transparent);
   top: -10%;
   right: -5%;
   animation: float-slow 20s ease-in-out infinite;
 }
 
 .dashboard-bg::after {
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, #7c3aed, transparent);
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #E1BEE7, #CE93D840, transparent);
   bottom: -10%;
   left: -5%;
   animation: float-slower 25s ease-in-out infinite;
